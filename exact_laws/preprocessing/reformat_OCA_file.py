@@ -1,11 +1,15 @@
+version = "27/06/2022"
 import sys
 import numpy as np
 import numexpr as ne
 import h5py as h5
 from datetime import datetime
+from contextlib import redirect_stdout
+import logging
 
-import math.derivation as Math_Tools
-import scan_file
+from ..math import derivation
+from . import scan_file
+
 
 
 def extract_simu_param_from_OCA_file(file, dic_param, param):
@@ -141,7 +145,7 @@ def record_v(file, dic_quant, dic_param, inc=""):
 
 
 def record_w(file, dic_quant, dic_param, inc=""):
-    wx, wy, wz = Math_Tools.rot(
+    wx, wy, wz = derivation.rot(
         [dic_quant[f"{inc}vx"], dic_quant[f"{inc}vy"], dic_quant[f"{inc}vz"]],
         dic_param["c"],
         precision=4,
@@ -153,22 +157,22 @@ def record_w(file, dic_quant, dic_param, inc=""):
 
 
 def record_gradv(file, dic_quant, dic_param, inc=""):
-    dxvx, dyvx, dzvx = Math_Tools.grad(dic_quant[f"{inc}vx"], dic_param["c"], precision=4, period=True)
+    dxvx, dyvx, dzvx = derivation.grad(dic_quant[f"{inc}vx"], dic_param["c"], precision=4, period=True)
     file.create_dataset(f"{inc}dxvx", data=dxvx, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dyvx", data=dyvx, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dzvx", data=dzvx, shape=dic_param["N"], dtype=np.float64)
-    dxvy, dyvy, dzvy = Math_Tools.grad(dic_quant[f"{inc}vy"], dic_param["c"], precision=4, period=True)
+    dxvy, dyvy, dzvy = derivation.grad(dic_quant[f"{inc}vy"], dic_param["c"], precision=4, period=True)
     file.create_dataset(f"{inc}dxvy", data=dxvy, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dyvy", data=dyvy, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dzvy", data=dzvy, shape=dic_param["N"], dtype=np.float64)
-    dxvz, dyvz, dzvz = Math_Tools.grad(dic_quant[f"{inc}vz"], dic_param["c"], precision=4, period=True)
+    dxvz, dyvz, dzvz = derivation.grad(dic_quant[f"{inc}vz"], dic_param["c"], precision=4, period=True)
     file.create_dataset(f"{inc}dxvz", data=dxvz, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dyvz", data=dyvz, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset(f"{inc}dzvz", data=dzvz, shape=dic_param["N"], dtype=np.float64)
 
 
 def record_delv(file, dic_quant, dic_param, inc=""):
-    delv = Math_Tools.div(
+    delv = derivation.div(
         [dic_quant[f"{inc}vx"], dic_quant[f"{inc}vy"], dic_quant[f"{inc}vz"]],
         dic_param["c"],
         precision=4,
@@ -182,7 +186,7 @@ def record_rho(file, dic_quant, dic_param):
 
 
 def record_delrho(file, dic_quant, dic_param):
-    delrhox, delrhoy, delrhoz = Math_Tools.grad(dic_quant["rho"], dic_param["c"], precision=4, period=True)
+    delrhox, delrhoy, delrhoz = derivation.grad(dic_quant["rho"], dic_param["c"], precision=4, period=True)
     file.create_dataset("drhox", data=delrhox, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset("drhoy", data=delrhoy, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset("drhoz", data=delrhoz, shape=dic_param["N"], dtype=np.float64)
@@ -237,14 +241,14 @@ def record_isou(file, dic_quant, dic_param):
 
 def record_delisou(file, dic_quant, dic_param):
     uiso = ne.evaluate("(ppar+pperp+pperp)/2/rho", local_dict=dic_quant)
-    deluisox, deluisoy, deluisoz = Math_Tools.grad(uiso, dic_param["c"], precision=4, period=True)
+    deluisox, deluisoy, deluisoz = derivation.grad(uiso, dic_param["c"], precision=4, period=True)
     file.create_dataset("duisox", data=deluisox, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset("duisoy", data=deluisoy, shape=dic_param["N"], dtype=np.float64)
     file.create_dataset("duisoz", data=deluisoz, shape=dic_param["N"], dtype=np.float64)
 
 
 def record_Ij(file, dic_quant, dic_param):
-    jx, jy, jz = Math_Tools.rot(
+    jx, jy, jz = derivation.rot(
         [dic_quant["bx"], dic_quant["by"], dic_quant["bz"]],
         dic_param["c"],
         precision=4,
@@ -257,7 +261,7 @@ def record_Ij(file, dic_quant, dic_param):
 
 def record_j(file, dic_quant, dic_param):
     rho = dic_quant["rho"]
-    jx, jy, jz = Math_Tools.rot(
+    jx, jy, jz = derivation.rot(
         [dic_quant["bx"], dic_quant["by"], dic_quant["bz"]],
         dic_param["c"],
         precision=4,
@@ -270,13 +274,13 @@ def record_j(file, dic_quant, dic_param):
 
 def record_delj(file, dic_quant, dic_param):
     rho = dic_quant["rho"]
-    jx, jy, jz = Math_Tools.rot(
+    jx, jy, jz = derivation.rot(
         [dic_quant["bx"], dic_quant["by"], dic_quant["bz"]],
         dic_param["c"],
         precision=4,
         period=True,
     )
-    delj = Math_Tools.div(
+    delj = derivation.div(
         [ne.evaluate("jx/rho"), ne.evaluate("jy/rho"), ne.evaluate("jz/rho")],
         dic_param["c"],
         precision=4,
@@ -330,7 +334,7 @@ def record_delb(file, dic_quant, dic_param, inc=""):
             ne.evaluate("by/sqrt(rho)", local_dict=dic_quant),
             ne.evaluate("bz/sqrt(rho)", local_dict=dic_quant),
         ]
-    delb = Math_Tools.div(tab, dic_param["c"], precision=4, period=True)
+    delb = derivation.div(tab, dic_param["c"], precision=4, period=True)
     file.create_dataset(f"{inc}delb", data=delb, shape=dic_param["N"], dtype=np.float64)
 
 
@@ -481,11 +485,15 @@ def inputfile_to_dict(filename):
             value = line.split()
             if len(value) >= 2:
                 inputdic[value[0]] = value[1]
+
+    def safe_get_bool(in_dict, key):
+        return bool(int(in_dict.get(key,False)))
+
     inputdic["folder_data"] = str(inputdic["folder_data"])
     inputdic["cycle"] = str(inputdic["cycle"])
     inputdic["folder_record"] = str(inputdic["folder_record"])
     inputdic["name_record"] = str(inputdic["name_record"])
-    inputdic["BG17"] = bool(int(inputdic["BG17"]))
+    inputdic["BG17"] = safe_get_bool(inputdic, "BG17")
     inputdic["BG17Hall"] = bool(int(inputdic["BG17Hall"]))
     inputdic["SS22I"] = bool(int(inputdic["SS22I"]))
     inputdic["SS22IGyr"] = bool(int(inputdic["SS22IGyr"]))
@@ -505,3 +513,20 @@ def inputfile_to_dict(filename):
     print()
     sys.stdout.flush()
     return inputdic
+
+
+def main(config_file):
+    now = datetime.today()
+    with open(f"output_process_{now.strftime('%d%m%Y_%H%M')}.txt", "w") as f:
+        with redirect_stdout(f):
+            logging.info(f'Run of {__file__} version {version}')
+            sys.stdout.flush()
+            inputdic = inputfile_to_dict(config_file)
+            binning = inputdic["bin"]
+            inputdic["bin"] = 1
+            file_process = data_process_OCA(inputdic)
+            if binning != 1:
+                inputdic["bin"] = binning
+                scan_file.data_binning(file_process, inputdic)
+            now = datetime.now()
+            logging.info(f"End the {datetime.today().strftime('%d/%m/%Y')} at {datetime.today().strftime('%H:%M')}")

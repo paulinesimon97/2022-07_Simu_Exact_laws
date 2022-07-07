@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def cdiff(tab, length_case=1, dirr=0, precision=4, period=True, point=False):
     """
     Return the differential of 'tab' according to a quantity whose length is 'length_case' whith a centre method \n
@@ -40,7 +41,7 @@ def cdiff(tab, length_case=1, dirr=0, precision=4, period=True, point=False):
                     result[:, :, -2] = (tab[:, :, -1] - tab[:, :, -3]) / (2 * length_case)
                     result[:, :, -1] = (tab[:, :, -1] - tab[:, :, -2]) / length_case
         else:
-            result = (tab[-1] + 8 * tab[1] - 8 * tab[-2] - tab[0]) / (12 * length_case)
+            result = (tab[0] + 8 * tab[-2] - 8 * tab[1] - tab[-1]) / (12 * length_case)  # diff locale ordre 4
     elif precision == 2:
         if not point:
             result = (np.roll(tab, -1, axis=int(dirr)) - np.roll(tab, 1, axis=int(dirr))) / (2 * length_case)

@@ -1,0 +1,10 @@
+[run]
+branch = True
+
+omit =
+    tests/*
+    setup.py
+    *cdf*
+    .venv/*
+    docs/*
+    examples/*
