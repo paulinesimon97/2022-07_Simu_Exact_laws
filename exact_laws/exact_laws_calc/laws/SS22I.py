@@ -50,5 +50,4 @@ class Ss22i(AbstractLaw):
 
 
 def load():
-    print("Hello from SS22I")
     return Ss22i()

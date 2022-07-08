@@ -29,7 +29,7 @@ def check_h5_file_with_good_format(filename):
                 del tab
                 sys.stdout.flush()
 
-def data_binning(file_process, inputdic):
+def data_binning(file_process, bin):
     """
     Vérification si le fichier contenant les données réduite existe déjà.
     Si non, enclenche le processus de création.
@@ -37,11 +37,11 @@ def data_binning(file_process, inputdic):
     """
     print(f"Data binning beginning: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
     sys.stdout.flush()
-    file_record = f"{file_process[:-3]}_bin{str(inputdic['bin'])}.h5"
+    file_record = f"{file_process[:-3]}_bin{str(bin)}.h5"
     if verif_file_existence(file_record, "Data binning impossible."):
         return file_record
     else:
-        bin_arrays_in_h5(file_process, file_record, inputdic["bin"])
+        bin_arrays_in_h5(file_process, file_record, bin)
     print(f"Data binning end: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')} \n")
     sys.stdout.flush()
     check_h5_file_with_good_format(file_record)
@@ -91,7 +91,7 @@ def bin_arrays_in_h5(file_name, file_record, binning):
                     keys = list(g["param"].keys())
                     keys.remove("N")
                     keys.remove("c")
-                    keys.remove("bin")
+                    keys.remove("reduction")
                     for kp in keys:
                         f["param"].create_dataset(kp, data=g["param"][kp])
     return 0

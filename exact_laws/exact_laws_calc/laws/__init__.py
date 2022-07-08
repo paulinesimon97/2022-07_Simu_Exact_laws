@@ -11,7 +11,6 @@ def load_law(name):
 
 def load_all():
     laws = [f[:-3] for f in os.listdir(here) if f[-3:] == '.py' and f != '__init__.py']
-    print(laws)
     return {law: load_law(law) for law in laws}
 
 

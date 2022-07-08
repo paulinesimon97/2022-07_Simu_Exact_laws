@@ -1,4 +1,3 @@
-version = "27/06/2022"
 import sys
 import numpy as np
 import numexpr as ne
@@ -6,10 +5,14 @@ import h5py as h5
 from datetime import datetime
 from contextlib import redirect_stdout
 import logging
+import configparser
 
 from ..math import derivation
+from ..exact_laws_calc.laws import LAWS
+from .quantities import QUANTITIES
 from . import scan_file
 
+version = "27/06/2022"
 
 
 def extract_simu_param_from_OCA_file(file, dic_param, param):
@@ -30,97 +33,6 @@ def extract_quantities_from_OCA_file(file, list_quant, cycle):
     for quant in list_quant:
         list_data.append(np.transpose(np.ascontiguousarray(file[f"{cycle}/{quant}"], dtype=np.float64)))
     return list_data
-
-
-def creat_dic_want(inputdic):
-    dic_want = {
-        "v": False,
-        "w": False,
-        "gradv": False,
-        "delv": False,
-        "rho": False,
-        "delrho": False,
-        "Igyrp": False,
-        "gyrp": False,
-        "gyru": False,
-        "isop": False,
-        "isou": False,
-        "delisou": False,
-        "Ib": False,
-        "b": False,
-        "delb": False,
-        "Ij": False,
-        "j": False,
-        "delj": False,
-        "Ipm": False,
-        "pm": False,
-    }
-    if inputdic["BG17"]:
-        dic_want["v"] = True
-        dic_want["w"] = True
-        dic_want["Ij"] = True
-        dic_want["Ib"] = True
-    if inputdic["BG17Hall"]:
-        dic_want["Ij"] = True
-        dic_want["Ib"] = True
-    if inputdic["SS22I"]:
-        dic_want["v"] = True
-        dic_want["Ib"] = True
-    if inputdic["SS22IGyr"]:
-        dic_want["gradv"] = True
-        dic_want["Igyrp"] = True
-        dic_want["Ib"] = True
-        dic_want["Ipm"] = True
-    if inputdic["SS22IHall"]:
-        dic_want["Ij"] = True
-        dic_want["Ib"] = True
-    if inputdic["SS22C"]:
-        dic_want["v"] = True
-        dic_want["delv"] = True
-        dic_want["rho"] = True
-        dic_want["delrho"] = True
-        dic_want["b"] = True
-        dic_want["delb"] = True
-        dic_want["pm"] = True
-    if inputdic["SS22CIso"]:
-        dic_want["v"] = True
-        dic_want["delv"] = True
-        dic_want["rho"] = True
-        dic_want["delrho"] = True
-        dic_want["isop"] = True
-        dic_want["isou"] = True
-    if inputdic["SS22CGyr"]:
-        dic_want["v"] = True
-        dic_want["gradv"] = True
-        dic_want["delv"] = True
-        dic_want["rho"] = True
-        dic_want["delrho"] = True
-        dic_want["gyrp"] = True
-        dic_want["gyru"] = True
-        dic_want["b"] = True
-        dic_want["pm"] = True
-    if inputdic["SS22CHall"]:
-        dic_want["rho"] = True
-        dic_want["j"] = True
-        dic_want["delj"] = True
-        dic_want["b"] = True
-        dic_want["delb"] = True
-    if inputdic["SS21C"]:
-        dic_want["v"] = True
-        dic_want["delv"] = True
-        dic_want["rho"] = True
-        dic_want["b"] = True
-        dic_want["delb"] = True
-        dic_want["pm"] = True
-    if inputdic["SS21CIso"]:
-        dic_want["v"] = True
-        dic_want["delv"] = True
-        dic_want["rho"] = True
-        dic_want["isop"] = True
-        dic_want["isou"] = True
-        dic_want["delisou"] = True
-        dic_want["pm"] = True
-    return dic_want
 
 
 def record_v(file, dic_quant, dic_param, inc=""):
@@ -347,7 +259,14 @@ def record_pm(file, dic_quant, dic_param):
     )
 
 
-def data_process_OCA(inputdic):
+def list_quantities(laws, quantities):
+    quantities = quantities.copy()
+    for law in laws:
+        quantities += LAWS[law].variables()
+    return list(set(quantities))
+
+
+def data_process_OCA(input_folder, output_folder, name, cycle, laws, quantities, sim_type, di, reduction):
     """
     Input: inputdic (Dictionnaire créé par Data_process.inputfile_to_dict())
     Ce qui est fait:
@@ -361,18 +280,19 @@ def data_process_OCA(inputdic):
     print(f"Data process beginning: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
     sys.stdout.flush()
 
-    file_record = f"{inputdic['folder_record']}{inputdic['name_record']}.h5"
+    file_record = f"{output_folder}/{name}.h5"
+
     if scan_file.verif_file_existence(file_record, "Data process impossible."):
         return file_record
 
     g = h5.File(file_record, "w")
     dic_param = {}
-    dic_want = creat_dic_want(inputdic)
+    needed_quantities = list_quantities(laws, quantities)
 
     dic_quant = {}
     # kinetic source file
-    with h5.File(f"{inputdic['folder_data']}3Dfields_v.h5", "r") as fv:
-        if "CGL_3" in inputdic["folder_data"]:
+    with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
+        if "CGL3" in sim_type:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "3Dgrid")
         else:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "Simulation_Parameters")
@@ -380,78 +300,78 @@ def data_process_OCA(inputdic):
             dic_quant["vx"],
             dic_quant["vy"],
             dic_quant["vz"],
-        ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], inputdic["cycle"])
-    if dic_want["v"]:
-        record_v(g, dic_quant, dic_param)
-    if dic_want["w"]:
+        ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
+    if "v" in needed_quantities:
+        QUANTITIES['v'].create_datasets(g, dic_quant, dic_param)
+    if "w" in needed_quantities:
         record_w(g, dic_quant, dic_param)
-    if dic_want["gradv"]:
+    if "gradv" in needed_quantities:
         record_gradv(g, dic_quant, dic_param)
-    if dic_want["delv"]:
+    if "delv" in needed_quantities:
         record_delv(g, dic_quant, dic_param)
     del (dic_quant["vx"], dic_quant["vy"], dic_quant["vz"])
     print(f"\t - End data process v: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
     sys.stdout.flush()
 
     # Density source file
-    with h5.File(f"{inputdic['folder_data']}3Dfields_rho.h5", "r") as frho:
+    with h5.File(f"{input_folder}/3Dfields_rho.h5", "r") as frho:
         dic_quant["rho"] = extract_quantities_from_OCA_file(
             frho,
             [
                 "rho",
             ],
-            inputdic["cycle"],
+            cycle,
         )
-    if dic_want["rho"]:
+    if "rho" in needed_quantities:
         record_rho(g, dic_quant, dic_param)
-    if dic_want["delrho"]:
+    if "delrho" in needed_quantities:
         record_delrho(g, dic_quant, dic_param)
     print(f"\t - End data process rho: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
     sys.stdout.flush()
 
     # Pressure source file
-    with h5.File(f"{inputdic['folder_data']}3Dfields_pi.h5", "r") as fp:
+    with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
         dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(
-            fp, ["pparli", "pperpi"], inputdic["cycle"]
+            fp, ["pparli", "pperpi"], cycle
         )
-    if dic_want["Igyrp"]:
+    if "Igyrp" in needed_quantities:
         record_Igyrp(g, dic_quant, dic_param)
-    if dic_want["gyrp"]:
+    if "gyrp" in needed_quantities:
         record_gyrp(g, dic_quant, dic_param)
-    if dic_want["gyru"]:
+    if "gyru" in needed_quantities:
         record_gyru(g, dic_quant, dic_param)
-    if dic_want["isop"]:
+    if "isop" in needed_quantities:
         record_isop(g, dic_quant, dic_param)
-    if dic_want["isou"]:
+    if "isou" in needed_quantities:
         record_isou(g, dic_quant, dic_param)
-    if dic_want["delisou"]:
+    if "delisou" in needed_quantities:
         record_delisou(g, dic_quant, dic_param)
     del (dic_quant["ppar"], dic_quant["pperp"])
     print(f"\t - End data process p: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
     sys.stdout.flush()
 
     # Magnetic field source file
-    with h5.File(f"{inputdic['folder_data']}3Dfields_b.h5", "r") as fb:
+    with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
         (
             dic_quant["bx"],
             dic_quant["by"],
             dic_quant["bz"],
-        ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], inputdic["cycle"])
-    if dic_want["Ib"]:
-        record_Ib(g, dic_quant, dic_param)
-    if dic_want["b"]:
-        record_b(g, dic_quant, dic_param)
-    if dic_want["delb"]:
+        ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+    if "Ib" in needed_quantities:
+        QUANTITIES['Ib'].create_datasets(g, dic_quant, dic_param)
+    if "b" in needed_quantities:
+        QUANTITIES['b'].create_datasets(g, dic_quant, dic_param)
+    if "delb" in needed_quantities:
         record_delb(g, dic_quant, dic_param)
-    if dic_want["Ij"]:
+    if "Ij" in needed_quantities:
         record_Ij(g, dic_quant, dic_param)
-    if dic_want["j"]:
+    if "j" in needed_quantities:
         record_j(g, dic_quant, dic_param)
-    if dic_want["delj"]:
+    if "delj" in needed_quantities:
         record_delj(g, dic_quant, dic_param)
-    if dic_want["Ipm"]:
+    if "Ipm" in needed_quantities:
         record_Ipm(g, dic_quant, dic_param)
-    if dic_want["pm"]:
+    if "pm" in needed_quantities:
         record_pm(g, dic_quant, dic_param)
     del dic_quant
     print(f"\t - End data process b: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
@@ -461,9 +381,15 @@ def data_process_OCA(inputdic):
     g.create_group("param")
     for key in dic_param.keys():
         g["param"].create_dataset(key, data=dic_param[key])
-    for key in inputdic.keys():
-        if not ("folder" in key or "name" in key):
-            g["param"].create_dataset(key, data=inputdic[key])
+
+    g["param"].create_dataset('laws', data=laws)
+    g["param"].create_dataset('quantities', data=quantities)
+    g["param"].create_dataset('cycle', data=cycle)
+    g["param"].create_dataset('name', data=name)
+    g["param"].create_dataset('sim_type', data=sim_type)
+    g["param"].create_dataset('di', data=di)
+    g["param"].create_dataset('reduction', data=reduction)
+
     g.close()
     print(f"Data process end: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')} \n")
     scan_file.check_h5_file_with_good_format(file_record)
@@ -471,48 +397,68 @@ def data_process_OCA(inputdic):
     return file_record
 
 
-def inputfile_to_dict(filename):
-    """
-    Input: filename(str, name+ext of the input .txt file)
-    Read the input txt file
-    Formating of the information
-    Display the information
-    Output: dic that contains the input information such as usable by the Data_process functions
-    """
-    inputdic = {}
-    with open(filename, encoding="utf-8") as entree:
-        for line in entree:
-            value = line.split()
-            if len(value) >= 2:
-                inputdic[value[0]] = value[1]
+# def inputfile_to_dict(filename):
+#     """
+#     Input: filename(str, name+ext of the input .txt file)
+#     Read the input txt file
+#     Formating of the information
+#     Display the information
+#     Output: dic that contains the input information such as usable by the Data_process functions
+#     """
+#     inputdic = {}
+#     with open(filename, encoding="utf-8") as entree:
+#         for line in entree:
+#             value = line.split()
+#             if len(value) >= 2:
+#                 inputdic[value[0]] = value[1]
+#
+#     def safe_get_bool(in_dict, key):
+#         return bool(int(in_dict.get(key, False)))
+#
+#     inputdic["folder_data"] = str(inputdic["folder_data"])
+#     inputdic["cycle"] = str(inputdic["cycle"])
+#     inputdic["folder_record"] = str(inputdic["folder_record"])
+#     inputdic["name_record"] = str(inputdic["name_record"])
+#     inputdic["BG17"] = safe_get_bool(inputdic, "BG17")
+#     inputdic["BG17Hall"] = bool(int(inputdic["BG17Hall"]))
+#     inputdic["SS22I"] = bool(int(inputdic["SS22I"]))
+#     inputdic["SS22IGyr"] = bool(int(inputdic["SS22IGyr"]))
+#     inputdic["SS22IHall"] = bool(int(inputdic["SS22IHall"]))
+#     inputdic["SS22C"] = bool(int(inputdic["SS22C"]))
+#     inputdic["SS22CIso"] = bool(int(inputdic["SS22CIso"]))
+#     inputdic["SS22CGyr"] = bool(int(inputdic["SS22CGyr"]))
+#     inputdic["SS22CHall"] = bool(int(inputdic["SS22CHall"]))
+#     inputdic["SS21C"] = bool(int(inputdic["SS21C"]))
+#     inputdic["SS21CIso"] = bool(int(inputdic["SS21CIso"]))
+#     inputdic["SS21CHom"] = bool(int(inputdic["SS21CHom"]))
+#     inputdic["di"] = float(inputdic["di"])
+#     inputdic["bin"] = int(inputdic["bin"])
+#     print(f"input_process.txt content:")
+#     for k in inputdic.keys():
+#         print(f"\t - {k}: {inputdic[k]}")
+#     print()
+#     sys.stdout.flush()
+#     return inputdic
 
-    def safe_get_bool(in_dict, key):
-        return bool(int(in_dict.get(key,False)))
 
-    inputdic["folder_data"] = str(inputdic["folder_data"])
-    inputdic["cycle"] = str(inputdic["cycle"])
-    inputdic["folder_record"] = str(inputdic["folder_record"])
-    inputdic["name_record"] = str(inputdic["name_record"])
-    inputdic["BG17"] = safe_get_bool(inputdic, "BG17")
-    inputdic["BG17Hall"] = bool(int(inputdic["BG17Hall"]))
-    inputdic["SS22I"] = bool(int(inputdic["SS22I"]))
-    inputdic["SS22IGyr"] = bool(int(inputdic["SS22IGyr"]))
-    inputdic["SS22IHall"] = bool(int(inputdic["SS22IHall"]))
-    inputdic["SS22C"] = bool(int(inputdic["SS22C"]))
-    inputdic["SS22CIso"] = bool(int(inputdic["SS22CIso"]))
-    inputdic["SS22CGyr"] = bool(int(inputdic["SS22CGyr"]))
-    inputdic["SS22CHall"] = bool(int(inputdic["SS22CHall"]))
-    inputdic["SS21C"] = bool(int(inputdic["SS21C"]))
-    inputdic["SS21CIso"] = bool(int(inputdic["SS21CIso"]))
-    inputdic["SS21CHom"] = bool(int(inputdic["SS21CHom"]))
-    inputdic["di"] = float(inputdic["di"])
-    inputdic["bin"] = int(inputdic["bin"])
-    print(f"input_process.txt content:")
-    for k in inputdic.keys():
-        print(f"\t - {k}: {inputdic[k]}")
-    print()
-    sys.stdout.flush()
-    return inputdic
+'''
+
+[INPUT_DATA]
+path = /home/jeandet/Documents/DATA/Pauline/
+cycle = cycle_0
+sim_type = OCA_CGL2
+
+[OUTPUT_DATA]
+path = ./
+name = OCA_CGL2_cycle0_completeInc
+reduction = 2
+laws = ['SS22I', 'BG17']
+quantities = ['Iv']
+
+[PHYSICAL_PARAMS]
+di = 1
+
+'''
 
 
 def main(config_file):
@@ -521,12 +467,19 @@ def main(config_file):
         with redirect_stdout(f):
             logging.info(f'Run of {__file__} version {version}')
             sys.stdout.flush()
-            inputdic = inputfile_to_dict(config_file)
-            binning = inputdic["bin"]
-            inputdic["bin"] = 1
-            file_process = data_process_OCA(inputdic)
-            if binning != 1:
-                inputdic["bin"] = binning
-                scan_file.data_binning(file_process, inputdic)
+            config = configparser.ConfigParser()
+            config.read(config_file)
+            file_process = data_process_OCA(input_folder=config['INPUT_DATA']['path'],
+                                            output_folder=config['OUTPUT_DATA']['path'],
+                                            name=config['OUTPUT_DATA']['name'],
+                                            sim_type=config['INPUT_DATA']['sim_type'],
+                                            cycle=config['INPUT_DATA']['cycle'],
+                                            quantities=eval(config['OUTPUT_DATA']['quantities']),
+                                            laws=eval(config['OUTPUT_DATA']['laws']),
+                                            reduction=1,
+                                            di=float(eval((config['PHYSICAL_PARAMS']['di'])))
+                                            )
+            if config['OUTPUT_DATA']["reduction"] != '1':
+                scan_file.data_binning(file_process, int(config['OUTPUT_DATA']["reduction"]))
             now = datetime.now()
             logging.info(f"End the {datetime.today().strftime('%d/%m/%Y')} at {datetime.today().strftime('%H:%M')}")

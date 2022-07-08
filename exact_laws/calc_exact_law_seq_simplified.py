@@ -334,7 +334,7 @@ class OriginalDataset:
     def __init__(self, param, datadic, scale):
         """Initialisation of the mother class data"""
         self.param = param
-        self.datadic = datadic  # dictionary
+        self.datadic = datadic  # dictionary 
         self.scale = scale  # grid
 
     def check(self, mpi):

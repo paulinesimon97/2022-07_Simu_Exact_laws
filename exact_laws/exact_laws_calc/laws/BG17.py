@@ -7,5 +7,4 @@ class Bg17(AbstractLaw):
 
 
 def load():
-    print("Hello from BG17")
     return Bg17()
