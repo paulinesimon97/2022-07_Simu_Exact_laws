@@ -1,13 +1,26 @@
 import numpy as np
 import numexpr as ne
 
+from ...math import derivation
+from .b import B
 
-class B:
+class J:
     def __init__(self, incompressible=False):
-        self.name = 'I' * incompressible + 'b'
+        self.name = 'I' * incompressible + 'j'
         self.incompressible = incompressible
+    
+    def get_original_quantity(dic_quant, dic_param):
+        dic_quant['jx'], dic_quant['jy'], dic_quant['jz'] = derivation.rot(
+            [dic_quant["bx"], dic_quant["by"], dic_quant["bz"]],
+            dic_param["c"],
+            precision = 4,
+            period = True,
+        )
 
     def create_datasets(self, file, dic_quant, dic_param):
+        if not ("jx" in dic_quant.keys() or "jy" in dic_quant.keys() or "jz" in dic_quant.keys()):
+            J.get_original_quantity(dic_quant, dic_param)
+            
         if self.incompressible:
             for axis in ('x', 'y', 'z'):
                 ds_name = f"{self.name}{axis}"
@@ -22,12 +35,12 @@ class B:
                 ds_name = f"{self.name}{axis}"
                 file.create_dataset(
                     ds_name,
-                    data = ne.evaluate(f"{ds_name}/sqrt(rho)", local_dict=dic_quant),
+                    data = ne.evaluate(f"{ds_name}/rho", local_dict=dic_quant),
                     shape = dic_param["N"],
                     dtype = np.float64,
                 )
 
 
 def load(incompressible=False):
-    b = B(incompressible=incompressible)
-    return b.name, b
+    j = J(incompressible=incompressible)
+    return j.name, j
