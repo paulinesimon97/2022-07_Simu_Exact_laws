@@ -12,8 +12,6 @@ from ..exact_laws_calc.laws import LAWS
 from .quantities import QUANTITIES
 from . import process_on_standard_h5_file
 
-version = "27/06/2022"
-
 
 def extract_simu_param_from_OCA_file(file, dic_param, param):
     dic_param["L"] = np.array([file[f"{param}/x"][-1], file[f"{param}/y"][-1], file[f"{param}/z"][-1]])
@@ -51,12 +49,24 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
     En cours d'exécution: Print d'informations à propos des étapes intermédiaires.
     Output: nom du nouveau fichier .h5
     """
-    print(f"Data process beginning: {datetime.now.strftime('%d-%m-%Y at %H:%M:%S')}")
-    sys.stdout.flush()
+    
+    output_file = f"{output_folder}/{name}.h5"
+    
+    message = (f"Begin process from_OCA_files_to_standard_h5_file() with config:"
+               f"\n\t - input_folder: {input_folder}"
+               f"\n\t - sim_type: {sim_type}"
+               f"\n\t - cycle: {input_folder}"
+               f"\n\t - output_file: {output_file}"
+               f"\n\t - laws: {laws}"
+               f"\n\t - quantities: {quantities}"
+               f"\n\t - reduction: {reduction}"
+               )
+    logging.info(message)
             
     output_file = f"{output_folder}/{name}.h5"
 
-    if process_on_standard_h5_file.verif_file_existence(output_file, "Data process impossible."):
+    if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."):
+        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
         return output_file
 
     g = h5.File(output_file, "w")
@@ -70,7 +80,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "3Dgrid")
         else:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "Simulation_Parameters")
-    print(f"\t - End data process param: {datetime.now().strftime('%d-%m-%Y at %H:%M:%S')}")
+    logging.info(f"... End extracting param")
     
     # velocity source file 
     with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv: 
@@ -84,8 +94,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
     del (dic_quant["vx"], dic_quant["vy"], dic_quant["vz"])
-    print(f"\t - End data process v: {datetime.now().strftime('%d-%m-%Y at %H:%M:%S')}")
-    sys.stdout.flush()
+    logging.info(f"... End computing quantities from _v.h5")
 
     # Density source file
     with h5.File(f"{input_folder}/3Dfields_rho.h5", "r") as frho:
@@ -96,8 +105,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
     for aq in accessible_quantities:
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
-    print(f"\t - End data process rho: {datetime.now().strftime('%d-%m-%Y at %H:%M:%S')}")
-    sys.stdout.flush()
+    logging.info(f"... End computing quantities from _rho.h5")
 
     # Pressure source file
     with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
@@ -109,8 +117,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
     del (dic_quant["ppar"], dic_quant["pperp"])
-    print(f"\t - End data process p: {datetime.now().strftime('%d-%m-%Y at %H:%M:%S')}")
-    sys.stdout.flush()
+    logging.info(f"... End computing quantities from _pi.h5")
 
     # Magnetic field source file
     with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
@@ -124,8 +131,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
     del dic_quant
-    print(f"\t - End data process b: {datetime.now().strftime('%d-%m-%Y at %H:%M:%S')}")
-    sys.stdout.flush()
+    logging.info(f"... End computing quantities from _b.h5")
 
     # Param
     g.create_group("param")
@@ -143,8 +149,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
         g["param"].create_dataset(key, data=physical_params[key])
 
     g.close()
-    
-    print(f"Data process end: {datetime.now.strftime('%d-%m-%Y at %H:%M:%S')} \n")
+    logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
     
     return output_file
 
@@ -169,27 +174,19 @@ di = 1
 
 
 def reformat_oca_files(config_file):
-    now = datetime.today()
-    with open(f"output_process_{now.strftime('%d/%m/%Y_%H:%M')}.txt", "w") as f:
-        with redirect_stdout(f):
-            logging.info(f'Run of {__file__} version {version}')
-            sys.stdout.flush()
-            config = configparser.ConfigParser()
-            config.read(config_file)
-            file_process = from_OCA_files_to_standard_h5_file(input_folder=config['INPUT_DATA']['path'],
-                                                             output_folder=config['OUTPUT_DATA']['path'],
-                                                             name=config['OUTPUT_DATA']['name'],
-                                                             sim_type=config['INPUT_DATA']['sim_type'],
-                                                             cycle=config['INPUT_DATA']['cycle'],
-                                                             quantities=eval(config['OUTPUT_DATA']['quantities']),
-                                                             laws=eval(config['OUTPUT_DATA']['laws']),
-                                                             reduction=1,
-                                                             physical_params={'di':float(eval((config['PHYSICAL_PARAMS']['di'])))}
-                                                             )
-            process_on_standard_h5_file.check_file(file_process)
-            print(" ")
-            if config['OUTPUT_DATA']["reduction"] != '1':
-                file_process = process_on_standard_h5_file.data_binning(file_process, int(config['OUTPUT_DATA']["reduction"]))
-                process_on_standard_h5_file.check_file(file_process)
-            now = datetime.now()
-            logging.info(f"End the {now.strftime('%d/%m/%Y at %H:%M')}")
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    file_process = from_OCA_files_to_standard_h5_file(input_folder=config['INPUT_DATA']['path'],
+                                                        output_folder=config['OUTPUT_DATA']['path'],
+                                                        name=config['OUTPUT_DATA']['name'],
+                                                        sim_type=config['INPUT_DATA']['sim_type'],
+                                                        cycle=config['INPUT_DATA']['cycle'],
+                                                        quantities=eval(config['OUTPUT_DATA']['quantities']),
+                                                        laws=eval(config['OUTPUT_DATA']['laws']),
+                                                        reduction=1,
+                                                        physical_params={'di':float(eval((config['PHYSICAL_PARAMS']['di'])))}
+                                                        )
+    process_on_standard_h5_file.check_file(file_process)
+    if config['OUTPUT_DATA']["reduction"] != '1':
+        file_process = process_on_standard_h5_file.data_binning(file_process, int(config['OUTPUT_DATA']["reduction"]))
+        process_on_standard_h5_file.check_file(file_process)

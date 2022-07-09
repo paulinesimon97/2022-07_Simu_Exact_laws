@@ -2,12 +2,11 @@ import os, sys
 import h5py as h5
 import numpy as np
 from datetime import datetime
+import logging
 
 def verif_file_existence(filename, message):
     if os.path.isfile(filename):
-        print(f"The file already exists. {message}")
-        print(f"End: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')} \n")
-        sys.stdout.flush()
+        logging.error(f"The file already exists. {message}")
         return True
 
 def check_file(filename):
@@ -15,17 +14,21 @@ def check_file(filename):
     Affichage du contenu du fichier .h5 nommé "file".
     Les informations délivrées à propos des cubes de données sont la moyenne et l'écart-type.
     """
-    print(f"Check file {filename} : ")
+    logging.info(f"Check file {filename} ...") 
+    message = f"... file {filename} contains:"
     with h5.File(filename, "r") as g:
+        message += f"\n\t param:"
         for param in g["param"].keys():
-            print(f"\t - {param} : {np.array(g[f'param/{param}'])}")
-        sys.stdout.flush()
+            message += f"\n\t - {param} : {np.array(g[f'param/{param}'])}"
+        message += f"\n\t quantities:"
         for quantity in g.keys():
             if not "param" in quantity:
-                tab = np.sort(np.array(g[quantity]).flatten())
-                print(f"\t - {quantity} : {np.mean(tab)} $\pm$ {np.std(tab)}")
-                del tab
-                sys.stdout.flush()
+                tab = np.array(g[quantity])
+                #tab = np.sort(np.array(g[quantity]).flatten())
+                message += f"\n\t - {quantity} : {np.mean(tab):.5} $\pm$ {np.std(tab):.5}"
+                del tab                
+    logging.info(message+"\n") 
+    
 
 def data_binning(file_process, bin):
     """
@@ -33,16 +36,23 @@ def data_binning(file_process, bin):
     Si non, enclenche le processus de création.
     Puis affiche le contenu du nouveau fichier.
     """
-    print(f"Data binning beginning: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')}")
-    sys.stdout.flush()
     output_filename = f"{file_process[:-3]}_bin{str(bin)}.h5"
+    message = (f"Begin process data_binning() with config:"
+               f"\n\t - input_file: {file_process}"
+               f"\n\t - output_file: {output_filename}"
+               f"\n\t - reduction: {bin}"
+               )
+    logging.info(message)
+    
+    
     if verif_file_existence(output_filename, "Data binning impossible."):
+        logging.info(f"End process data_binning()\n")
         return output_filename
     else:
         bin_arrays_in_h5(file_process, output_filename, bin)
-    print(f"Data binning end: {datetime.today().strftime('%d-%m-%Y %H:%M:%S')} \n")
-    sys.stdout.flush()
-    print(" ")
+        
+    logging.info(f"End process data_binning()\n")
+    
     return output_filename
 
 
