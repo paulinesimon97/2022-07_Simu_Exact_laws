@@ -1,0 +1,34 @@
+import os
+import pickle as pkl
+import logging
+
+class Save():
+    def __init__():
+        pass
+    
+    def configure(self,config,time):
+        if config is None:
+            if self.rank == 0:
+                os.mkdir(f"./save_{time.strftime('%d%m%Y_%H%M')}")  # creation of a recording folder
+            self.folder = f"./save_{time.strftime('%d%m%Y_%H%M')}/"
+            self.already = True
+        else: 
+            self.folder = config
+            self.already = False
+        
+    def save(self,object,name,rank='',state=''):
+        logging.info(f"Save {name} {state} in folder {self.folder} INIT")
+        filename = f"{self.folder}/{name}_rk{rank}.pkl"
+        with open(filename, "wb") as f:
+            pkl.dump(object, f)
+        logging.info(f"Save {name} END")
+    
+    
+    def download(self,name,rank=''):
+        logging.info(f"Download {name} from folder {self.folder} INIT")
+        filename = f"{self.folder}/{name}_rk{rank}.pkl"
+        with open(filename, "rb") as f:
+            output = pkl.load(f)
+        logging.info(f"Download {name} END")
+        return output
+       
