@@ -1,10 +1,11 @@
-from exact_laws.math.derivation import cdiff, div, rot, grad
+from exact_laws.mathematical_tools.derivation import *
+from .. import not_implemented_warning as NIW
 import pytest
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class TestCdiff:
+        
     def test_sin1D_periodic_pres4_point(self):
         x = np.arange(0, 100) / 100 * 2 * np.pi
         fx = np.sin(x)
@@ -89,6 +90,7 @@ class TestCdiff:
 
 
 class TestDiv:
+        
     def test_sin3D_periodic_pres4(self):
         x = np.arange(0, 100) / 100 * 2 * np.pi
         sinx = np.sin(x)
@@ -107,6 +109,7 @@ class TestDiv:
 
 
 class TestRot:
+        
     def test_lin3D_noperiodic_pres4(self):
         x = np.arange(0, 100) / 100 * 2 * np.pi
         fx = np.array([x[i] + 2 * x[j] + 4 * x[k] for i in range(100) for j in range(100) for k in range(100)]).reshape(
@@ -123,9 +126,6 @@ class TestRot:
             (100, 100, 100))
         result_x, result_y, result_z = rot([fx, fy, fz], case_vec=[x[1], x[1], x[1]], period=False)
         precision = x[1] * x[1]
-        print(np.mean(result_x))
-        print(np.mean(result_y))
-        print(np.mean(result_z))
         assert np.max(np.abs(result_x - expected_result_x)) < precision, f"error on rot computation direction x"
         assert np.max(np.abs(result_y - expected_result_y)) < precision, f"error on rot computation direction y"
         assert np.max(np.abs(result_z - expected_result_z)) < precision, f"error on rot computation direction z"
@@ -159,6 +159,7 @@ class TestRot:
 
 
 class TestGrad:
+        
     def test_sin3D_periodic_pres4(self):
         x = np.arange(0, 100) / 100 * 2 * np.pi
         sinx = np.sin(x)

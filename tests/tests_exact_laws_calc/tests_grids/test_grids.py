@@ -1,9 +1,10 @@
-from exact_laws.exact_laws_calc import Grid
+from exact_laws.exact_laws_calc.grids import *
 import pytest
 import numpy as np
-import matplotlib.pyplot as plt
+from ... import not_implemented_warning as NIW
 
 class TestInit:
+    
     def test_init(self):
         N = [10,10,10]
         L = [125.6,126.5,12.5]
@@ -13,6 +14,7 @@ class TestInit:
         assert np.array_equal(grid.L,L), f"error on L attribute"
         assert np.array_equal(grid.c,c), f"error on c attribute"
 
-class TestCheck: 
-    """voir contenu du fichier output_process_[...].txt."""
-    pass
+class TestCheck:
+    
+    def test(self):
+        NIW(Grid.check)
