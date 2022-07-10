@@ -3,18 +3,18 @@ import pickle as pkl
 import logging
 
 class Save():
-    def __init__():
+    def __init__(self):
         pass
     
-    def configure(self,config,time):
+    def configure(self,config,time,rank):
         if config is None:
-            if self.rank == 0:
+            if rank == 0:
                 os.mkdir(f"./save_{time.strftime('%d%m%Y_%H%M')}")  # creation of a recording folder
             self.folder = f"./save_{time.strftime('%d%m%Y_%H%M')}/"
-            self.already = True
+            self.already = False
         else: 
             self.folder = config
-            self.already = False
+            self.already = True
         
     def save(self,object,name,rank='',state=''):
         logging.info(f"Save {name} {state} in folder {self.folder} INIT")

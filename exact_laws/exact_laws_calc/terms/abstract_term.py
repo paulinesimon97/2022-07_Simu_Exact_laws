@@ -130,3 +130,6 @@ class AbstractTerm:
             local_dict=datadic,
         )
         return np.sum(tab)  # np.sum(np.sort(tab.flatten()))
+
+def load():
+    return AbstractTerm()

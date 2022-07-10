@@ -17,10 +17,12 @@ logging.basicConfig(filename=f"reformat_oca_files_{datetime.now().strftime('%d%m
                     )
 
 if __name__ == "__main__":
+    
     if args.list_quantities:
         from exact_laws.preprocessing.quantities import QUANTITIES
         print(list(QUANTITIES.keys()))
         exit(0)
+        
     logging.info(f"Run of {__file__} version {version}\n")
     reformat_oca_files(config_file=args.config_file)
     logging.info(f"Exit")

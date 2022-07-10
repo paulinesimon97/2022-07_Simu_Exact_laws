@@ -7,7 +7,6 @@ from contextlib import redirect_stdout
 import logging
 import configparser
 
-from ..math import derivation
 from ..exact_laws_calc.laws import LAWS
 from .quantities import QUANTITIES
 from . import process_on_standard_h5_file

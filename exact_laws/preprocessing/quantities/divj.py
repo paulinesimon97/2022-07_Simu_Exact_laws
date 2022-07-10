@@ -1,7 +1,7 @@
 import numpy as np
 import numexpr as ne
 
-from ...math import derivation
+from ...mathematical_tools import derivation
 from .j import J
 
 class DivJ:

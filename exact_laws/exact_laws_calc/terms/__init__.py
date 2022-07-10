@@ -3,12 +3,8 @@ import os
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-def load_law(name):
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.laws.{name}", "*")
-    return mod.load()
-
 def load_term(name):
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.laws.{name}", "*")
+    mod = importlib.import_module(f"exact_laws.exact_laws_calc.terms.{name}", "*")
     return mod.load()
 
 def load_all():

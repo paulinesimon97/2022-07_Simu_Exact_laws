@@ -19,10 +19,10 @@ class OutputCalcLaws(Dataset):
     
     def set_grid_from_another_grid(self,another_grid,param_grid):
         if param_grid['coord'] == 'logcyl':
-            N = (another_grid.N / 2).astype(int)
+            N = another_grid.N / 2
             L = another_grid.L / 2
             c = another_grid.c
-            self.grid = Grid_scale_logcyl(N=N, L=L, c=c, 
+            self.grid = Grid_scale_logcyl(N=N.astype(int), L=L, c=c, 
                                      Nmax_scale=param_grid['Nmax_scale'],
                                      Nmax_list=param_grid['Nmax_list'], 
                                      kind=param_grid["kind"]

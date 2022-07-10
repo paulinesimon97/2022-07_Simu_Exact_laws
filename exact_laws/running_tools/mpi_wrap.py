@@ -96,11 +96,11 @@ class Mpi:
         #self.pprint(f"Group carac :\n    - size : {self.group_size}\n    - rank : {self.group_rank}\n")
         message = f"Check Mpi object {name}:"
         message += f"\n\t - Nb processors: {self.size}"
-        message += f"\n\t - Distributed data scattered along z:\n\t\t - Nb layer: {self.Nblayer}\n\t\t - count: {self.count}\n\t\t - displ: {self.displ}"
+        message += f"\n\t - Distributed data scattered along z:\n\t\t - Nb layer: {self.nblayer}\n\t\t - count: {self.count}\n\t\t - displ: {self.displ}"
         message += f"\n\t - Distributed data send via {self.bufnum} buffer\n"
         message += f"\n\t - Current group carac:\n\t\t - size: {self.group_size}\n\t\t - rank: {self.group_rank}\n"
         
-        logging.info()
+        logging.info(message)
 
     # def check_time(self, state, time_deb=None):
     #     """Display if rank 0, a state tag and the current time"""
