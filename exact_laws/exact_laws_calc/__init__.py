@@ -78,7 +78,7 @@ def initialise_original_dataset(input_filename,mpi):
     logging.info("Initialisation original data END")
     return original_dataset, laws
 
-def initialise_output_dataset(grid,original_dataset):
+def initialise_output_dataset(grid,original_dataset,laws):
     logging.info(f"Initialisation output data INIT")
     params = {}
     params['laws'] = laws
@@ -222,7 +222,7 @@ def calc_exact_laws_from_config(config_file,mpi=Mpi()):
     if save.already:
         original_dataset = save.download('data_origin',rank=f"{0 + 1 * (mpi.rank != 0)}")
     else:
-        initialise_original_dataset(input_filename,mpi)
+        original_dataset, laws = initialise_original_dataset(input_filename,mpi)
         if mpi.rank in [0,1]:
             save.save(original_dataset,'data_origin',rank=f"{mpi.rank}")  
     original_dataset.check('original_dataset')
@@ -232,7 +232,7 @@ def calc_exact_laws_from_config(config_file,mpi=Mpi()):
     if save.already:
         output_dataset = save.download('data_output',rank=f"{mpi.rank}")
     else:                 
-        initialise_output_dataset(input_grid,original_dataset)
+        output_dataset = initialise_output_dataset(input_grid,original_dataset,laws)
         save.save(output_dataset,'data_output',rank=f"{mpi.rank}")
     output_dataset.check('output_dataset')
     mpi.barrier 

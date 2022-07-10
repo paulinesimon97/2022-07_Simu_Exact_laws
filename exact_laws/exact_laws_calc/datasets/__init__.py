@@ -31,7 +31,6 @@ def read_standard_file(filename):
     with h5.File(filename, "r") as f:
         quantities = {k:np.ascontiguousarray(f[k]) for k in f.keys() if not "param" in k}
         laws = f['param/laws'][()]
-        print(laws)
         laws = [law.decode() for law in laws]
         grid = {k:np.ascontiguousarray(f[f'param/{k}']) for k in f["param"].keys() if k in ['L','c','N']}
         params = {k:eval(str(f[f'param/{k}'][()])) for k in f["param"].keys() if not k in ['L','c','N','laws']}
