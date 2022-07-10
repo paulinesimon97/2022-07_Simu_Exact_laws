@@ -32,13 +32,17 @@ def extract_quantities_from_OCA_file(file, list_quant, cycle):
         list_data.append(np.transpose(np.ascontiguousarray(file[f"{cycle}/{quant}"], dtype=np.float64)))
     return list_data
 
+
 def list_quantities(laws, quantities):
     quantities = quantities.copy()
     for law in laws:
         quantities += LAWS[law].variables()
     return list(set(quantities))
 
-def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle, laws, quantities, sim_type, physical_params, reduction):
+
+def from_OCA_files_to_standard_h5_file(
+    input_folder, output_folder, name, cycle, laws, quantities, sim_type, physical_params, reduction
+):
     """
     Input: inputdic (Dictionnaire créé par Data_process.inputfile_to_dict())
     Ce qui est fait:
@@ -49,20 +53,21 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
     En cours d'exécution: Print d'informations à propos des étapes intermédiaires.
     Output: nom du nouveau fichier .h5
     """
-    
+
     output_file = f"{output_folder}/{name}.h5"
-    
-    message = (f"Begin process from_OCA_files_to_standard_h5_file() with config:"
-               f"\n\t - input_folder: {input_folder}"
-               f"\n\t - sim_type: {sim_type}"
-               f"\n\t - cycle: {input_folder}"
-               f"\n\t - output_file: {output_file}"
-               f"\n\t - laws: {laws}"
-               f"\n\t - quantities: {quantities}"
-               f"\n\t - reduction: {reduction}"
-               )
+
+    message = (
+        f"Begin process from_OCA_files_to_standard_h5_file() with config:"
+        f"\n\t - input_folder: {input_folder}"
+        f"\n\t - sim_type: {sim_type}"
+        f"\n\t - cycle: {input_folder}"
+        f"\n\t - output_file: {output_file}"
+        f"\n\t - laws: {laws}"
+        f"\n\t - quantities: {quantities}"
+        f"\n\t - reduction: {reduction}"
+    )
     logging.info(message)
-            
+
     output_file = f"{output_folder}/{name}.h5"
 
     if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."):
@@ -81,15 +86,15 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
         else:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "Simulation_Parameters")
     logging.info(f"... End extracting param")
-    
-    # velocity source file 
-    with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv: 
+
+    # velocity source file
+    with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
         (
             dic_quant["vx"],
             dic_quant["vy"],
             dic_quant["vz"],
         ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-    accessible_quantities = ['v','w','gradv','divv']
+    accessible_quantities = ["v", "w", "gradv", "divv"]
     for aq in accessible_quantities:
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
@@ -99,9 +104,13 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
     # Density source file
     with h5.File(f"{input_folder}/3Dfields_rho.h5", "r") as frho:
         dic_quant["rho"] = extract_quantities_from_OCA_file(
-            frho, ["rho",], cycle,
+            frho,
+            [
+                "rho",
+            ],
+            cycle,
         )
-    accessible_quantities = ['rho','gradrho']
+    accessible_quantities = ["rho", "gradrho"]
     for aq in accessible_quantities:
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
@@ -109,10 +118,8 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
 
     # Pressure source file
     with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
-        dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(
-            fp, ["pparli", "pperpi"], cycle
-        )
-    accessible_quantities = ["Ipgyr","pgyr","ugyr","piso","uiso","graduiso"]
+        dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(fp, ["pparli", "pperpi"], cycle)
+    accessible_quantities = ["Ipgyr", "pgyr", "ugyr", "piso", "uiso", "graduiso"]
     for aq in accessible_quantities:
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
@@ -126,7 +133,7 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
             dic_quant["by"],
             dic_quant["bz"],
         ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
-    accessible_quantities = ["Ib","b","divb","Ij","j","divj","Ipm","pm"]
+    accessible_quantities = ["Ib", "b", "divb", "Ij", "j", "divj", "Ipm", "pm"]
     for aq in accessible_quantities:
         if aq in needed_quantities:
             QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
@@ -138,22 +145,23 @@ def from_OCA_files_to_standard_h5_file(input_folder, output_folder, name, cycle,
     for key in dic_param.keys():
         g["param"].create_dataset(key, data=dic_param[key])
 
-    g["param"].create_dataset('laws', data=laws)
-    g["param"].create_dataset('quantities', data=quantities)
-    g["param"].create_dataset('cycle', data=cycle)
-    g["param"].create_dataset('name', data=name)
-    g["param"].create_dataset('sim_type', data=sim_type)
-    g["param"].create_dataset('reduction', data=reduction)
-    
+    g["param"].create_dataset("laws", data=laws)
+    g["param"].create_dataset("quantities", data=quantities)
+    g["param"].create_dataset("cycle", data=cycle)
+    g["param"].create_dataset("name", data=name)
+    g["param"].create_dataset("sim_type", data=sim_type)
+    g["param"].create_dataset("reduction", data=reduction)
+
     for key in physical_params.keys():
         g["param"].create_dataset(key, data=physical_params[key])
 
     g.close()
     logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
-    
+
     return output_file
 
-'''
+
+"""
 
 [INPUT_DATA]
 path = /home/jeandet/Documents/DATA/Pauline/
@@ -170,23 +178,24 @@ quantities = ['Iv']
 [PHYSICAL_PARAMS]
 di = 1
 
-'''
+"""
 
 
 def reformat_oca_files(config_file):
     config = configparser.ConfigParser()
     config.read(config_file)
-    file_process = from_OCA_files_to_standard_h5_file(input_folder=config['INPUT_DATA']['path'],
-                                                        output_folder=config['OUTPUT_DATA']['path'],
-                                                        name=config['OUTPUT_DATA']['name'],
-                                                        sim_type=config['INPUT_DATA']['sim_type'],
-                                                        cycle=config['INPUT_DATA']['cycle'],
-                                                        quantities=eval(config['OUTPUT_DATA']['quantities']),
-                                                        laws=eval(config['OUTPUT_DATA']['laws']),
-                                                        reduction=1,
-                                                        physical_params={'di':float(eval((config['PHYSICAL_PARAMS']['di'])))}
-                                                        )
+    file_process = from_OCA_files_to_standard_h5_file(
+        input_folder=config["INPUT_DATA"]["path"],
+        output_folder=config["OUTPUT_DATA"]["path"],
+        name=config["OUTPUT_DATA"]["name"],
+        sim_type=config["INPUT_DATA"]["sim_type"],
+        cycle=config["INPUT_DATA"]["cycle"],
+        quantities=eval(config["OUTPUT_DATA"]["quantities"]),
+        laws=eval(config["OUTPUT_DATA"]["laws"]),
+        reduction=1,
+        physical_params={k: float(eval((config["PHYSICAL_PARAMS"][k]))) for k in config["PHYSICAL_PARAMS"].keys()},
+    )
     process_on_standard_h5_file.check_file(file_process)
-    if config['OUTPUT_DATA']["reduction"] != '1':
-        file_process = process_on_standard_h5_file.data_binning(file_process, int(config['OUTPUT_DATA']["reduction"]))
+    if config["OUTPUT_DATA"]["reduction"] != "1":
+        file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
         process_on_standard_h5_file.check_file(file_process)
