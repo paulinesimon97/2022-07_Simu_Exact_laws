@@ -1,6 +1,8 @@
 import importlib
 import os
 
+from . import source_test
+
 here = os.path.dirname(os.path.realpath(__file__))
 
 def load_term(name):
