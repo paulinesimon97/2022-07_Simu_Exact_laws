@@ -22,10 +22,13 @@ def load():
 
 @njit
 def calc_in_point(i, j, k, ip, jp, kp, vx, vy, vz):
+    
     dvx = vx[ip,jp,kp] - vx[i,j,k]
     dvy = vy[ip,jp,kp] - vy[i,j,k]
     dvz = vz[ip,jp,kp] - vz[i,j,k]
+    
     fx = (dvx * dvx + dvy * dvy + dvz * dvz) * dvx
     fy = (dvx * dvx + dvy * dvy + dvz * dvz) * dvy
     fz = (dvx * dvx + dvy * dvy + dvz * dvz) * dvz
+    
     return fx, fy, fz
