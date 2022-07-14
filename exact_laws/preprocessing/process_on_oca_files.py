@@ -8,6 +8,7 @@ import logging
 import configparser
 
 from ..exact_laws_calc.laws import LAWS
+from ..exact_laws_calc.terms import TERMS
 from .quantities import QUANTITIES
 from . import process_on_standard_h5_file
 
@@ -32,15 +33,17 @@ def extract_quantities_from_OCA_file(file, list_quant, cycle):
     return list_data
 
 
-def list_quantities(laws, quantities):
+def list_quantities(laws, terms, quantities):
     quantities = quantities.copy()
+    for term in terms:
+        quantities += TERMS[term].variables()
     for law in laws:
         quantities += LAWS[law].variables()
     return list(set(quantities))
 
 
 def from_OCA_files_to_standard_h5_file(
-    input_folder, output_folder, name, cycle, laws, quantities, sim_type, physical_params, reduction
+    input_folder, output_folder, name, cycle, laws, terms, quantities, sim_type, physical_params, reduction
 ):
     """
     Input: inputdic (Dictionnaire créé par Data_process.inputfile_to_dict())
@@ -62,6 +65,7 @@ def from_OCA_files_to_standard_h5_file(
         f"\n\t - cycle: {input_folder}"
         f"\n\t - output_file: {output_file}"
         f"\n\t - laws: {laws}"
+        f"\n\t - terms: {terms}"
         f"\n\t - quantities: {quantities}"
         f"\n\t - reduction: {reduction}"
     )
@@ -75,7 +79,7 @@ def from_OCA_files_to_standard_h5_file(
 
     g = h5.File(output_file, "w")
     dic_param = {}
-    needed_quantities = list_quantities(laws, quantities)
+    needed_quantities = list_quantities(laws, terms, quantities)
 
     dic_quant = {}
     # param source file (obtained in velocity source file)
@@ -159,30 +163,28 @@ def from_OCA_files_to_standard_h5_file(
 
     return output_file
 
-
-"""
-
-[INPUT_DATA]
-path = /home/jeandet/Documents/DATA/Pauline/
-cycle = cycle_0
-sim_type = OCA_CGL2
-
-[OUTPUT_DATA]
-path = ./
-name = OCA_CGL2_cycle0_completeInc
-reduction = 2
-laws = ['SS22I', 'BG17']
-quantities = ['Iv']
-
-[PHYSICAL_PARAMS]
-di = 1
-
-"""
-
-
 def reformat_oca_files(config_file):
+    """
+    config_file example: 
+        [INPUT_DATA]
+        path = /home/jeandet/Documents/DATA/Pauline/
+        cycle = cycle_0
+        sim_type = OCA_CGL2
+
+        [OUTPUT_DATA]
+        path = ./
+        name = OCA_CGL2_cycle0_completeInc
+        reduction = 2
+        laws = ['SS22I', 'BG17']
+        terms = ['flux_dvdvdv']
+        quantities = ['Iv']
+
+        [PHYSICAL_PARAMS]
+        di = 1
+    """
     config = configparser.ConfigParser()
     config.read(config_file)
+    
     file_process = from_OCA_files_to_standard_h5_file(
         input_folder=config["INPUT_DATA"]["path"],
         output_folder=config["OUTPUT_DATA"]["path"],
@@ -191,10 +193,12 @@ def reformat_oca_files(config_file):
         cycle=config["INPUT_DATA"]["cycle"],
         quantities=eval(config["OUTPUT_DATA"]["quantities"]),
         laws=eval(config["OUTPUT_DATA"]["laws"]),
+        terms=eval(config["OUTPUT_DATA"]["terms"]),
         reduction=1,
         physical_params={k: float(eval((config["PHYSICAL_PARAMS"][k]))) for k in config["PHYSICAL_PARAMS"].keys()},
     )
     process_on_standard_h5_file.check_file(file_process)
+    
     if config["OUTPUT_DATA"]["reduction"] != "1":
         file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
         process_on_standard_h5_file.check_file(file_process)

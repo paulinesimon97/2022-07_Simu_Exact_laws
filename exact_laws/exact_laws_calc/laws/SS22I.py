@@ -1,6 +1,6 @@
 from typing import List
 
-from . import AbstractLaw
+from .abstract_law import AbstractLaw
 
 class Ss22i(AbstractLaw):
     def __init__(self):

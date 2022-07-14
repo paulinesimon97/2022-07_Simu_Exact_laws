@@ -82,6 +82,13 @@ class Mpi:
         else: 
             return object
         
+    def reduce(self,object):
+        if self.size != 1:
+            total = self.comm.reduce(object, op=self.op, root=0)
+        else:
+            total = object
+        return total
+        
     # def pprint(self, *objects, rk=0):
     #     if self.rank == rk:
     #         with open(f"output_ELcalc_{self.time_deb.strftime('%d%m%Y_%H%M')}.txt", "a") as file_print:

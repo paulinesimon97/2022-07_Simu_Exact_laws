@@ -1,215 +1,140 @@
 import logging
 import numpy as np
-import numexpr as ne
-import h5py as h5
 import configparser
-from functools import reduce
 
 from ..running_tools.mpi_wrap import Mpi
 from ..running_tools.save_wrap import Save
-from .datasets import Dataset, read_standard_file 
-from .datasets.output_calc_laws import OutputCalcLaws
-from .grids import Grid
-from .laws import LAWS
+from .datasets import load_from_standard_file, load
+from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid
 from .terms import TERMS
-from ..mathematical_tools.derivation import cdiff
-from .values_useful_for_calc_at_scale import ValuesUsefulForCalcAtScale
-
-'''
-
-[INPUT_DATA]
-path = ../../data_process/TestEff_CGL2/
-name = OCA_CGL2_cycle0_TestEff_bin2
-
-[OUTPUT_DATA]
-path = ./
-name = EL_logcyl40_cls100
-
-
-[RUN_PARAMS]
-nblayer = 8
-nbbuf = 4
-save = None
-
-[GRID_PARAMS]
-Nmax_scale = 40
-Nmax_list = 100
-kind = cls
-coord = logcyl
-
-'''
-
-def list_terms_and_coeffs(laws,physical_params):
-    terms = []
-    coeffs = {}
-    for law in laws:
-        terms_for_law, coeffs[law] = LAWS[law].terms_and_coeffs(physical_params)
-        terms += terms_for_law
-    return list(set(terms)), coeffs
-
-def fill_output_at_scale(output_dataset, indices, values, div=False):
-        """Remplissage des cubes au point d'indices 'indices' à partir des dictionnaires funcdic et argdic
-        si div = False : remplissage des cubes flux et sources
-        si div = True : remplissage des cubes term_div
-        """
-        if div == False:
-            for t in output_dataset.params['terms']:
-                output_dataset.quantities[t][indices[0], indices[1], indices[2]] = TERMS[t].calc(values=values.datadic)
-        else:
-            for t in output_dataset.params['terms']:
-                if t.startswith("flux"):
-                    output_dataset.quantities[f"term_div_{t}"][
-                        indices[0], indices[1], indices[2], indices[3], indices[4]
-                    ] = TERMS[t].calc(values=values.datadic)[indices[3]]
-
+from .laws import LAWS
 
 def initialise_original_dataset(input_filename,mpi):
     logging.info("Initialisation original data INIT")
-    original_dataset = Dataset()
-    laws = 0
-    grid = 0
-    if mpi.rank == 0:
-        original_dataset.quantities, original_dataset.params, laws, grid = read_standard_file(input_filename)
-    mpi.barrier
-    original_dataset.params = mpi.bcast(original_dataset.params)
-    laws = mpi.bcast(laws)
-    grid = mpi.bcast(grid)
-    original_dataset.grid = Grid.from_dict(grid)
+    original_dataset, laws, terms = load_from_standard_file(input_filename)
     logging.info("Initialisation original data END")
-    return original_dataset, laws
+    return original_dataset, laws, terms
 
-def initialise_output_dataset(grid,original_dataset,laws):
+def initialise_output_dataset(incremental_grid, original_dataset, laws, terms):
     logging.info(f"Initialisation output data INIT")
     params = {}
     params['laws'] = laws
-    params['terms'], coeffs = list_terms_and_coeffs(laws, original_dataset.params)
-    output_dataset = OutputCalcLaws(params, coeffs, grid, original_dataset.grid)
+    params['terms'], params['coeffs'] = list_terms_and_coeffs(laws, terms, original_dataset.params)
+    params['state'] = {'index':0, 'list': 'prim'}
+    grid = grid_prim_and_sec(params['terms'],incremental_grid)
+    quantities = init_ouput_quantities(grid.coords['listprim'],grid.coords['listsec'],params['terms'])
+    output_dataset = load(quantities=quantities, grid=grid, params=params)
     logging.info(f"Initialisation output data END")
     return output_dataset
 
-def calc_exact_laws(original_dataset,output_dataset,mpi,save):
-    logging.info("Calculation output data INIT")
-    useful_at_scale = ValuesUsefulForCalcAtScale(
-        original_dataset, mpi
-    )  # Insertion des données initiales dans le dictionnaire servant pour le calcul à vecteur fixé
-    useful_at_scale.check(mpi)
-    mpi.barrier()
+def list_terms_and_coeffs(laws,terms,physical_params):
+    list_terms = terms.copy()
+    coeffs = {}
+    for law in laws:
+        terms_for_law, coeffs[law] = LAWS[law].terms_and_coeffs(physical_params)
+        list_terms.append(*terms_for_law)
+    return list(set(list_terms)), coeffs
+
+def grid_prim_and_sec(terms, incremental_grid):
+    nb_sec_by_dirr = 0
+    for term in terms:
+        if term.startswith('flux'):
+            nb_sec_by_dirr = 1
+    return load_listgrid_from_incgrid(coord = incremental_grid.kind.split('_')[0],
+                                      incgrid = incremental_grid,
+                                      nb_sec_by_dirr = nb_sec_by_dirr)
     
-    logging.info("Calculation output data BEG")
-    # vecteur servant à obtenir le cube translaté en z qui sera distribuée aux processurs si parallélisation
-    vector_dir0 = [0, 0, 0]  
-     # vecteur servant à obtenir les translations du cube dans le plan polaire
-    vector = [0, 0, 0]  
+def init_ouput_quantities(listprim, listsec, terms):
+    output_quantities = {}
+    Nprim = len(listprim)
+    Nsec = len(listsec)
+    for term in terms:
+        if term.startswith('flux'):
+            output_quantities[term] = [np.zeros((Nprim,3)),np.zeros((Nsec,3))]
+        else:
+            output_quantities[term] = [np.zeros((Nprim,3))]
+    return output_quantities
 
-    # Test pour vérifier s'il est nécessaire de faire une divergence locale et donc de calculer les points autour du point d'intéret
-    div = False
-    for k in output_dataset.quantities.keys():
-        if "term_div" in k:
-            div = True
-            continue
+def calc_terms(dataset, listprim, listsec, terms, output_quantities, saved_index, saved_list, mpi):
+    # dataset contient au moins les quantités nécessaires au calcul
+    # grid_prim = [Np][3] et grid_sec = [Ns][3] contiennent des vecteurs à calculer sous le format [x,y,z]
+    # terms contient les noms des termes à calculer 
+    # sortie : {[term_scalaire]:[Np],array([term_flux]):[array([Np,3]),array([Ns,3])]}    
+    logging.info("INIT Calculation of the correlation functions")
+    Ndat = dataset.grid.N
+    terms_flux = []
+    for term in terms:
+        if term.startswith('flux'):
+            terms_flux.append(term)
+    if saved_list == 'prim':
+        for index, vector in enumerate(listprim):
+            if index % mpi.size*10 == 0 :
+                mpi.barrier()
+                logging(f'... End {saved_index + index} of listprim')
+                yield output_quantities, saved_index + index, 'prim'
+            if saved_index + index % mpi.size == mpi.rank:
+                for term in terms:
+                    output_quantities[term][0][saved_index + index] = TERMS[term].calc(vector,Ndat,**dataset.quantities) 
+        saved_list = 'sec'
+        saved_index=0
+    mpi.barrier()
+    if saved_list == 'sec':
+        for index, vector in enumerate(listsec):
+            if index % mpi.size*10 == 0 :
+                mpi.barrier()
+                logging(f'... End {saved_index + index} of listprim')
+                yield output_quantities, saved_index + index, 'sec'
+            if saved_index + index % mpi.size == mpi.rank:
+                for term in terms_flux:
+                    output_quantities[term][1][saved_index + index] = TERMS[term].calc(vector,Ndat,**dataset.quantities)
+    mpi.barrier()
+    logging.info("END Calculation of a correlation functions")
+    return output_quantities, saved_index + index, 'end'
 
-    state = output_dataset.state
-
-    # Boucle sur les plans
-    for ind_dir0 in range(state, output_dataset.grid.N[0]):
-        logging.info(f"Calculation output data state {ind_dir0} INIT")
-
-        # Insertion des données déplacées suivant z dans le dictionnaire servant pour le calcul à vecteur fixé
-        vector_dir0[2] = output_dataset.grid.grid["lz"][ind_dir0]
-        useful_at_scale.set_data_dir0(original_dataset, vector_dir0, mpi)
-        mpi.barrier()
-
-        i = -1
-        # Boucle sur les rayons dans les plans polaires
-        for lperp in range(output_dataset.grid.N[1]):
-
-            # Distribution des calculs 1 vecteur => 1 processeur si parallélisation
-            for vect in range(len(output_dataset.grid.grid["listperp"][lperp])):
-                i += 1
-                if mpi.group_rank == i % mpi.group_size:
-                    # Insertion des données déplacées dans le plan polaire dans le dictionnaire servant pour le calcul à vecteur fixé
-                    vector[0] = output_dataset.grid.grid["listperp"][lperp][vect][0]
-                    vector[1] = output_dataset.grid.grid["listperp"][lperp][vect][1]
-                    useful_at_scale.set_data_prim(vector)
-                    # Calcul à vecteur fixé
-                    indices = [ind_dir0, lperp, vect]
-                    fill_output_at_scale(output_dataset, indices, useful_at_scale)
-
-                    if div == True:
-                        for d in range(3):
-                            for p in [-1, 1]:
-                                vector_div = np.copy(vector)
-                                vector_div[d] = vector[d] + p
-                                useful_at_scale.set_data_prim(vector_div)
-                                if p == -1:
-                                    p = 0
-                                indices = [ind_dir0, lperp, vect, d, p]
-                                fill_output_at_scale(output_dataset, indices, useful_at_scale, div=True)
-        mpi.barrier()
-        logging.info(f"Calculation output data state {ind_dir0} END")
-        output_dataset.state += 1
-
-        save.save(output_dataset,'data_output',rank=f"{mpi.rank}",state=f'state {ind_dir0}')
-
-    logging.info(f"Filtre output data INIT")
-    for k in output_dataset.quantities.keys():
-        output_dataset.quantities[k] = np.where(
-            np.abs(output_dataset.quantities[k]) < 1e-15, 0 * output_dataset.quantities[k], output_dataset.quantities[k]
-        )
-    logging.info(f"Filtre output data END")
-
+def reduction_output(quantities,mpi):
     logging.info(f"Reduction output data INIT")
-    for k in output_dataset.quantities.keys():
-        if mpi.size != 1:
-            total = mpi.comm.reduce(output_dataset.quantities[k], op=mpi.op, root=0)
-        if mpi.rank == 0:
-            denom = reduce(lambda x, y: x * y, original_dataset.grid.N)
-            output_dataset.quantities[k] = total / denom
+    output = {}
+    for k in quantities.keys():
+        output[k] = mpi.reduce(quantities[k])
     logging.info(f"Reduction output data END")
-
-    logging.info(f"Divergence output data INIT")
-    if mpi.rank == 0:
-        for k in output_dataset.quantities.keys():
-            if k.startswith("div_"):
-                case_vec = output_dataset.grid.c
-                local_dict = {
-                    "fx": [
-                        output_dataset.quantities["term_" + k][:, :, :, 0, 0],
-                        output_dataset.quantities["term_" + k][:, :, :, 0, -1],
-                    ],
-                    "fy": [
-                        output_dataset.quantities["term_" + k][:, :, :, 1, 0],
-                        output_dataset.quantities["term_" + k][:, :, :, 1, -1],
-                    ],
-                    "fz": [
-                        output_dataset.quantities["term_" + k][:, :, :, 2, 0],
-                        output_dataset.quantities["term_" + k][:, :, :, 2, -1],
-                    ],
-                }
-                local_dict["dx"] = cdiff(
-                    local_dict["fx"], length_case=case_vec[0], precision=2, period=False, point=True
-                )
-                local_dict["dy"] = cdiff(
-                    local_dict["fy"], length_case=case_vec[1], precision=2, period=False, point=True
-                )
-                local_dict["dz"] = cdiff(
-                    local_dict["fz"], length_case=case_vec[2], precision=2, period=False, point=True
-                )
-                output_dataset.quantities[k] = ne.evaluate(f"dx+dy+dz", local_dict=local_dict)
-    logging.info(f"Divergence output data END")
-
-    # for k in data_output.datadic.keys():
-    #    if mpi.rank == 0: print(k,' ',np.min(data_output.datadic[k]),' ',np.max(data_output.datadic[k]))
-    logging.info("Calculation output data END")
+    return output    
 
 def calc_exact_laws_from_config(config_file,mpi=Mpi()):
+    '''
+    config_file example:
+        [INPUT_DATA]
+        path = ../../data_process/TestEff_CGL2/
+        name = OCA_CGL2_cycle0_TestEff_bin2
+
+        [OUTPUT_DATA]
+        path = ./
+        name = EL_logcyl40_cls100
+
+
+        [RUN_PARAMS]
+        nblayer = 8
+        nbbuf = 4
+        save = None
+
+        [GRID_PARAMS]
+        Nmax_scale = 40
+        Nmax_list = 100
+        kind = cls
+        coord = logcyl
+    '''
     
     config = configparser.ConfigParser()
     config.read(config_file)
+    
+    # configure the potential parallelisation process (add old way params)
     mpi.set_nblayer(int(eval(config['RUN_PARAMS']['nblayer'])))
     mpi.set_bufnum(int(eval(config['RUN_PARAMS']['nbbuf'])))
+    
+    # configure the saving process (always valid way)
     save = Save()
     save.configure(eval(config['RUN_PARAMS']["save"]),mpi.time_deb,mpi.rank)
+    
+    # translate information useful for the computation
     input_filename = f"{config['INPUT_DATA']['path']}/{config['INPUT_DATA']['name']}.h5"
     output_filename = f"{config['OUTPUT_DATA']['path']}/{config['INPUT_DATA']['name']}_{config['OUTPUT_DATA']['name']}.h5"
     input_grid = {}
@@ -220,32 +145,59 @@ def calc_exact_laws_from_config(config_file,mpi=Mpi()):
     
     # Init Original_dataset
     if save.already:
-        original_dataset = save.download('data_origin',rank=f"{0 + 1 * (mpi.rank != 0)}")
+        original_dataset = save.download('data_origin')
     else:
-        original_dataset, laws = initialise_original_dataset(input_filename,mpi)
-        if mpi.rank in [0,1]:
-            save.save(original_dataset,'data_origin',rank=f"{mpi.rank}")  
-    original_dataset.check('original_dataset')
-    mpi.barrier    
+        original_dataset, laws, terms = initialise_original_dataset(input_filename,mpi)
+        if mpi.rank == 0:
+            save.save(original_dataset,'data_origin')  
+    original_dataset.check('original_dataset') 
+    
+    # Init Incremental_grid
+    if save.already:
+        incremental_grid = save.download('inc_grid')
+    else: 
+        incremental_grid = load_incgrid_from_grid(original_grid = original_dataset.grid,**input_grid)
+        if mpi.rank == 0:
+            save.save(incremental_grid,'inc_grid')
 
     # Init Output_dataset 
     if save.already:
         output_dataset = save.download('data_output',rank=f"{mpi.rank}")
     else:                 
-        output_dataset = initialise_output_dataset(input_grid,original_dataset,laws)
+        output_dataset = initialise_output_dataset(incremental_grid,original_dataset,laws,terms)
         save.save(output_dataset,'data_output',rank=f"{mpi.rank}")
     output_dataset.check('output_dataset')
-    mpi.barrier 
 
     # ## CALCUL LOI EXACTE
-    calc_exact_laws(original_dataset,output_dataset,mpi,save)
-
-    # ## Enregistrement données finales
-    logging.info(f"Record final result in {output_filename} INIT")
-    if mpi.rank == 0:
-        output_dataset.record_to_h5file(output_filename)
-        with h5.File(output_filename, "a") as file:
-            file.create_group("param_origin")
-            for k in original_dataset.params.keys():
-                file["param_origin"].create_dataset(k, data=original_dataset.params[k])
-    logging.info(f"Record final result END")
+    while output_dataset.params['state']['list'] != 'end':
+        output_dataset.quantities, output_dataset.params['state']['index'], output_dataset.params['state']['list'] = calc_terms(
+            dataset = original_dataset,
+            listprim = output_dataset.grid.coords['listprim'][output_dataset.params['state']['index']:],
+            listsec = output_dataset.grid.coords['listsec'][output_dataset.params['state']['index']:], 
+            terms = output_dataset.params['terms'],
+            output_quantities = output_dataset.quantities, 
+            saved_index = output_dataset.params['state']['index'], 
+            saved_list = output_dataset.params['state']['list'], 
+            mpi = mpi)
+        save.save(output_dataset,'data_output',rank=f"{mpi.rank}")        
+    del(output_dataset.params['state'])
+    
+    # ## DIVERGENCE
+    div_quantities = div_on_incgrid(incremental_grid,output_dataset)
+    for k in div_quantities.keys():
+        output_dataset.quantities[k] = [div_quantities[k]]
+        
+    # ## RASSEMBLEMENT
+    output_dataset.quantities = reduction_output(output_dataset.quantities,mpi)
+    save.save(output_dataset,'data_output_final',rank=f"{mpi.rank}")  
+    
+    
+    # # ## Enregistrement données finales
+    # logging.info(f"Record final result in {output_filename} INIT")
+    # if mpi.rank == 0:
+    #     output_dataset.record_to_h5file(output_filename)
+    #     with h5.File(output_filename, "a") as file:
+    #         file.create_group("param_origin")
+    #         for k in original_dataset.params.keys():
+    #             file["param_origin"].create_dataset(k, data=original_dataset.params[k])
+    # logging.info(f"Record final result END")
