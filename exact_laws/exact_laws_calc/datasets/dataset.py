@@ -1,6 +1,7 @@
 import logging
 from ..grids import Grid
 
+
 class Dataset:
     """Classe de données ayant pour attributs:
         - quantities[dict{name:np.array}]: contient les tableaux de valeurs des quantités
@@ -12,21 +13,19 @@ class Dataset:
         self.params = params
         self.quantities = quantities  # dictionary 
         self.grid = grid  # grid
-    
-    def describ(self,name:str) -> str:
+
+    def describ(self) -> str:
         message = f"\n\t - Params:"
-        for k in self.params.keys():
-            message += f"\n\t\t - {k} = {self.params[k]}"
-        message += f"\n\t - Quantities:"
-        for k in self.quantities.keys():
-            #tab = self.quantities[k]
-            message += f"\n\t\t - {k}"  # = {np.mean(np.sort(tab.copy().reshape(np.product(tab.shape))))}"))
-        message += f"\n\t - Grid: {self.describ().replace('\t', '\t\t')}"
+        for k, v in self.params.items():
+            message += f"\n\t\t - {k} = {v}"
+        message += f"\n\t - Quantities:\n\t\t"
+        message += "\n\t\t".join(self.quantities.keys())
+
+        tmp = self.grid.describ().replace('\t', '\t\t')
+        message += f"\n\t - Grid: {tmp}"
         return message
-    
-    def check(self,name:str) -> None:
+
+    def check(self, name: str) -> None:
         message = message = f"Check Dataset object {name}:"
         message += self.describ()
         logging.info(message)
-        
-            

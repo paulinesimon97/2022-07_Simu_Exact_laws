@@ -16,7 +16,8 @@ class IncGrid():
         self.kind = 'logcyl_'+kind
     
     def describ(self):
-        message =  f"\n\t - original grid :{self.spatial_grid.describ().replace('\t','\t\t')}"
+        tmp = self.spatial_grid.describ().replace('\t','\t\t')
+        message =  f"\n\t - original grid :{tmp}"
         message += f"\n\t - axis: {self.axis}"
         message += f"\n\t - N: {self.N}"
         message += f"\n\t - kind: {self.kind}"

@@ -1,7 +1,8 @@
 try:
-    import mpi4py
-    mpi4py.rc.recv_mprobe = False
-    from mpi4py import MPI
+    pass
+    #import mpi4py
+    #mpi4py.rc.recv_mprobe = False
+    #from mpi4py import MPI
 except:
     pass
 
@@ -162,9 +163,9 @@ class Mpi:
     
     def configure_log(self,name):
         if name == '':
-            folder = f"log_{self.time_deb.strftime('%d%m%Y_%H%M')}"
+            folder = f"log_{self.time_deb.strftime('%d%m%Y_%H%M%S')}"
         else:
-            folder = f"log_{name}_{self.time_deb.strftime('%d%m%Y_%H%M')}"
+            folder = f"log_{name}_{self.time_deb.strftime('%d%m%Y_%H%M%S')}"
         if self.rank == 0: os.mkdir(folder)
         self.barrier()
         filename = f"{folder}/{folder[4:]}_rank{self.rank}.log"

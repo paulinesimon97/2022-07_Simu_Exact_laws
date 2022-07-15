@@ -9,8 +9,8 @@ class Save():
     def configure(self,config,time,rank):
         if config is None:
             if rank == 0:
-                os.mkdir(f"./save_{time.strftime('%d%m%Y_%H%M')}")  # creation of a recording folder
-            self.folder = f"./save_{time.strftime('%d%m%Y_%H%M')}/"
+                os.mkdir(f"./save_{time.strftime('%d%m%Y_%H%M%S')}")  # creation of a recording folder
+            self.folder = f"./save_{time.strftime('%d%m%Y_%H%M%S')}/"
             self.already = False
         else: 
             self.folder = config

@@ -150,6 +150,7 @@ def from_OCA_files_to_standard_h5_file(
 
     g["param"].create_dataset("laws", data=laws)
     g["param"].create_dataset("quantities", data=quantities)
+    g["param"].create_dataset("terms", data=terms)
     g["param"].create_dataset("cycle", data=cycle)
     g["param"].create_dataset("name", data=name)
     g["param"].create_dataset("sim_type", data=sim_type)

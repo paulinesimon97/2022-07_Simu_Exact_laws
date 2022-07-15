@@ -38,7 +38,7 @@ def load_incgrid_from_grid(coord, **kargs):
     Returns:
         IncGrid object
     """
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.laws.{coord}", "*")
+    mod = importlib.import_module(f"exact_laws.exact_laws_calc.grids.{coord}", "*")
     return mod.load(**kargs)
 
 def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
@@ -50,15 +50,15 @@ def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
     Returns:
         Grid object that contains list of coordinates
     """
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.laws.{coord}", "*")
+    mod = importlib.import_module(f"exact_laws.exact_laws_calc.grids.{coord}", "*")
     coords = {}
     coords['listprim'], coords['listsec'], coords['nb_sec_by_dirr'] = mod.build_listcoords(incgrid, nb_sec_by_dirr)    
     return load_grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
 
 def div_on_incgrid(incgrid, dataset_terms):
     logging.info("INIT Calculation of the divergence")
-    list_prim = dataset_terms.grid.coords['list_prim']
-    list_sec = dataset_terms.grid.coords['list_sec']
+    list_prim = dataset_terms.grid.coords['listprim']
+    list_sec = dataset_terms.grid.coords['listsec']
     nb_sec_by_dirr = dataset_terms.grid.coords['nb_sec_by_dirr']
     N = incgrid.spatial_grid.N
     c = incgrid.spatial_grid.c
@@ -75,6 +75,7 @@ def div_on_incgrid(incgrid, dataset_terms):
                         if not i == 0:
                             vect = list(vect_prim)
                             vect[dirr] = (vect[dirr] + i) % N[dirr]
+                            vect = tuple(vect)
                             loc = -1
                             try:
                                 index = list_prim.index(vect)
@@ -95,5 +96,5 @@ def div_on_incgrid(incgrid, dataset_terms):
                         )
             output['div_'+k][ind] = div_point
     logging.info("END Calculation of the divergence")
-    return output()
+    return output
 

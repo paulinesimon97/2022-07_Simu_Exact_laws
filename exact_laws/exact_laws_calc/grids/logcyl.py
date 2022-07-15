@@ -4,9 +4,6 @@ import logging
 
 from .incgrid import IncGrid
 
-def load(original_grid, Nmax_scale, Nmax_list, kind, **kargs):
-    return build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind)
-
 def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind="cls"):
     axis = ['lz','lperp','listperp']
     grid = {}
@@ -65,7 +62,7 @@ def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nma
                 grid["listperp"][r] = random.sample(grid["listperp"][r], Nmax_list)
             grid["count"][r] = Nmax_list
     
-    return IncGrid(original_grid, np.array(N=[N_par, N_perp, np.max(grid["count"])], dtype=int), axis=axis, coords=grid, kind=kind)
+    return IncGrid(original_grid, N=np.array([N_par, N_perp, np.max(grid["count"])], dtype=int), axis=axis, coords=grid, kind=kind)
 
 def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
         N = incgrid.spatial_grid.N
@@ -91,5 +88,6 @@ def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
         list_sec = list(set(list_sec))
         return list_prim, list_sec, nb_sec_by_dirr
 
-    
+def load(original_grid, Nmax_scale, Nmax_list, kind, **kargs):
+    return build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind)
     
