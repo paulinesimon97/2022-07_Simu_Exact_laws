@@ -17,6 +17,7 @@ def cdiff(tab, length_case=1, dirr=0, precision=4, period=True, point=False):
         return np.zeros(np.shape(tab))
     tab = np.array(tab)
     if precision == 4:
+        # TODO split into 2 functions
         if not point:
             result = (
                              np.roll(tab, 2, axis=int(dirr))

@@ -171,6 +171,5 @@ class Mpi:
         filename = f"{folder}/{folder[4:]}_rank{self.rank}.log"
         logging.basicConfig(filename=filename, 
                         level=logging.DEBUG, 
-                        format='%(asctime)-12s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M:%S'
+                        format='%(asctime)s %(levelname)-8s %(message)s',
                         )
