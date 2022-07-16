@@ -1,4 +1,4 @@
-import logging
+from ... import logging
 from ..grids import Grid
 
 
@@ -28,4 +28,4 @@ class Dataset:
     def check(self, name: str) -> None:
         message = message = f"Check Dataset object {name}:"
         message += self.describ()
-        logging.info(message)
+        logging.getLogger(__name__).info(message)

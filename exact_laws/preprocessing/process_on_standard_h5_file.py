@@ -1,20 +1,21 @@
 import os, sys
 import h5py as h5
 import numpy as np
-from datetime import datetime
-import logging
+from .. import logging
+
 
 def verif_file_existence(filename, message):
     if os.path.isfile(filename):
-        logging.error(f"The file already exists. {message}")
+        logging.getLogger(__name__).error(f"The file already exists. {message}")
         return True
+
 
 def check_file(filename):
     """
     Affichage du contenu du fichier .h5 nommé "file".
     Les informations délivrées à propos des cubes de données sont la moyenne et l'écart-type.
     """
-    logging.info(f"Check file {filename} ...") 
+    logging.getLogger(__name__).info(f"Check file {filename} ...")
     message = f"... file {filename} contains:"
     with h5.File(filename, "r") as g:
         message += f"\n\t param:"
@@ -24,11 +25,11 @@ def check_file(filename):
         for quantity in g.keys():
             if not "param" in quantity:
                 tab = np.array(g[quantity])
-                #tab = np.sort(np.array(g[quantity]).flatten())
+                # tab = np.sort(np.array(g[quantity]).flatten())
                 message += f"\n\t - {quantity} : {np.mean(tab):.5} $\pm$ {np.std(tab):.5}"
-                del tab                
-    logging.info(message+"\n") 
-    
+                del tab
+    logging.getLogger(__name__).info(message + "\n")
+
 
 def data_binning(file_process, bin):
     """
@@ -42,17 +43,16 @@ def data_binning(file_process, bin):
                f"\n\t - output_file: {output_filename}"
                f"\n\t - reduction: {bin}"
                )
-    logging.info(message)
-    
-    
+    logging.getLogger(__name__).info(message)
+
     if verif_file_existence(output_filename, "Data binning impossible."):
-        logging.info(f"End process data_binning()\n")
+        logging.getLogger(__name__).info(f"End process data_binning()\n")
         return output_filename
     else:
         bin_arrays_in_h5(file_process, output_filename, bin)
-        
-    logging.info(f"End process data_binning()\n")
-    
+
+    logging.getLogger(__name__).info(f"End process data_binning()\n")
+
     return output_filename
 
 
@@ -70,9 +70,9 @@ def bin_an_array(tab, binning):
             np.shape(tab)[2] // binning,
             binning,
         )
-        .mean(-1)
-        .mean(3)
-        .mean(1)
+            .mean(-1)
+            .mean(3)
+            .mean(1)
     )
 
 

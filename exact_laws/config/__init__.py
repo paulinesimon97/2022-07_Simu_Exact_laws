@@ -94,9 +94,14 @@ enabled_terms = ConfigEntry('COMPUTATION', 'terms', ['flux_test'], type_ctor=eva
 enabled_quantities = ConfigEntry('COMPUTATION', 'quantities', [], type_ctor=eval)
 use_reduced_datasets = ConfigEntry('COMPUTATION', 'use_reduced_datasets', True, type_ctor=eval)
 
+with_mpi = ConfigEntry('COMPUTATION', 'with_mpi', False, type_ctor=eval)
+numba_parallel = ConfigEntry('COMPUTATION', 'numba_parallel', False, type_ctor=eval)
+compat_mode = ConfigEntry('COMPUTATION', 'compat_mode', False, type_ctor=eval)
+
 nblayers = ConfigEntry('COMPUTATION', 'nblayers', 8, type_ctor=int)
 nbbuff = ConfigEntry('COMPUTATION', 'nbbuff', 4, type_ctor=int)
 save_frequency = ConfigEntry('COMPUTATION', 'save_frequency', -1, type_ctor=int)
+restart_checkpoint = ConfigEntry('COMPUTATION', 'restart_checkpoint', "")
 
 grid_n_max_scale = ConfigEntry('COMPUTATION_GRID', 'n_max_scale', 5, type_ctor=int)
 grid_n_max_list = ConfigEntry('COMPUTATION_GRID', 'n_max_list', 3, type_ctor=int)

@@ -1,7 +1,9 @@
-import logging
+from exact_laws import logging
+from exact_laws.config import load_config
+from exact_laws import config
 import argparse
 import configparser
-from exact_laws.running_tools.run_config_wrap import load
+from exact_laws.running_tools.run_config_wrap import RunConfig
 from exact_laws.running_tools.backup_wrap import Backup
 from exact_laws.exact_laws_calc import calc_exact_laws_from_config
 
@@ -13,29 +15,26 @@ args = parser.parse_args()
 version = "09/07/2022"
 
 if __name__ == "__main__":
-    
+
     if args.list_laws:
-        from exact_laws.exact_laws_calc.laws import  LAWS
+        from exact_laws.exact_laws_calc.laws import LAWS
+
         print(list(LAWS.keys()))
         exit(0)
-    
-    config = configparser.ConfigParser()
-    config.read(args.config_file)
-    try: 
-        run_config = load(config['RUN_PARAMS']['config'],bool(eval(config['RUN_PARAMS']['numbap'])))
-    except: 
-        run_config = load(eval('NOP',False))
+
+    load_config(args.config_file)
+    run_config = RunConfig(with_mpi=config.with_mpi.get(), numba_parallel=config.numba_parallel.get(),
+                           compat_mode=config.compat_mode.get())
     run_config.configure_log('calc_exact_law')
-    
+
     # configure the potential parallelisation process (add old way params)
-    if run_config.config == 'OLD':
-        run_config.set_nblayer(int(eval(config['RUN_PARAMS']['nblayer'])))
-        run_config.set_bufnum(int(eval(config['RUN_PARAMS']['nbbuf'])))
+    if run_config.compat_mode:
+        run_config.set_nblayer(config.nblayers.get())
+        run_config.set_bufnum(config.nbbuff.get())
 
     # configure the saving process (always valid way)
-    backup = Backup()
-    backup.configure(eval(config['RUN_PARAMS']["save"]), run_config.time_deb, run_config.rank)
+    backup = Backup(config.restart_checkpoint.get(), run_config.time_deb, run_config.rank)
 
-    logging.info(f"Run of {__file__} version {version}\n")
-    calc_exact_laws_from_config(config_file=args.config_file,run_config=run_config, backup=backup)
-    logging.info(f"Exit")
+    logging.getLogger(__name__).info(f"Run of {__file__} version {version}\n")
+    calc_exact_laws_from_config(run_config=run_config, backup=backup)
+    logging.getLogger(__name__).info(f"Exit")

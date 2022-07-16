@@ -1,7 +1,7 @@
 from typing import List, Dict
 from warnings import warn
 import importlib
-import logging
+from ... import logging
 import numpy as np
 
 from .grid import Grid
@@ -56,7 +56,7 @@ def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
     return load_grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
 
 def div_on_incgrid(incgrid, dataset_terms):
-    logging.info("INIT Calculation of the divergence")
+    logging.getLogger(__name__).info("INIT Calculation of the divergence")
     list_prim = dataset_terms.grid.coords['listprim']
     list_sec = dataset_terms.grid.coords['listsec']
     nb_sec_by_dirr = dataset_terms.grid.coords['nb_sec_by_dirr']
@@ -95,6 +95,6 @@ def div_on_incgrid(incgrid, dataset_terms):
                             point=True,
                         )
             output['div_'+k][ind] = div_point
-    logging.info("END Calculation of the divergence")
+    logging.getLogger(__name__).info("END Calculation of the divergence")
     return output
 

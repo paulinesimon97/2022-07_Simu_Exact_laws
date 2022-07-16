@@ -1,6 +1,6 @@
-import logging
+from .. import logging
+from .. import config
 import numpy as np
-import configparser
 
 from .datasets import load_from_standard_file, load
 from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid
@@ -9,14 +9,14 @@ from .laws import LAWS
 
 
 def initialise_original_dataset(input_filename, run_config):
-    logging.info("Initialisation original data INIT")
+    logging.getLogger(__name__).info("Initialisation original data INIT")
     original_dataset, laws, terms = load_from_standard_file(input_filename)
-    logging.info("Initialisation original data END")
+    logging.getLogger(__name__).info("Initialisation original data END")
     return original_dataset, laws, terms
 
 
 def initialise_output_dataset(incremental_grid, original_dataset, laws, terms):
-    logging.info(f"Initialisation output data INIT")
+    logging.getLogger(__name__).info(f"Initialisation output data INIT")
     params = {}
     params['laws'] = laws
     params['terms'], params['coeffs'] = list_terms_and_coeffs(laws, terms, original_dataset.params)
@@ -24,7 +24,7 @@ def initialise_output_dataset(incremental_grid, original_dataset, laws, terms):
     grid = grid_prim_and_sec(params['terms'], incremental_grid)
     quantities = init_ouput_quantities(grid.coords['listprim'], grid.coords['listsec'], params['terms'])
     output_dataset = load(quantities=quantities, grid=grid, params=params)
-    logging.info(f"Initialisation output data END")
+    logging.getLogger(__name__).info(f"Initialisation output data END")
     return output_dataset
 
 
@@ -69,7 +69,7 @@ def calc_terms(dataset, output_dataset, run_config, save, backup_setp=10):
     output_quantities = output_dataset.quantities
     saved_list = output_dataset.params['state']['list']
 
-    logging.info("INIT Calculation of the correlation functions")
+    logging.getLogger(__name__).info("INIT Calculation of the correlation functions")
     Ndat = dataset.grid.N
 
     if saved_list == 'prim':
@@ -82,7 +82,7 @@ def calc_terms(dataset, output_dataset, run_config, save, backup_setp=10):
                                                                                    **dataset.quantities)
             if (index % (run_config.size * backup_setp)) == 0:
                 run_config.barrier()  # TODO check this
-                logging.info(f'... End {index} of listprim')
+                logging.getLogger(__name__).info(f'... End {index} of listprim')
                 output_dataset.params['state']['index'] = index + 1
                 save(output_dataset, 'data_output', rank=f"{run_config.rank}")
 
@@ -100,26 +100,26 @@ def calc_terms(dataset, output_dataset, run_config, save, backup_setp=10):
                                                                                    **dataset.quantities)
             if (index % (run_config.size * backup_setp)) == 0:
                 run_config.barrier()  # TODO check this
-                logging.info(f'... End {index} of listsec')
+                logging.getLogger(__name__).info(f'... End {index} of listsec')
                 output_dataset.params['state']['index'] = index + 1
                 output_dataset.params['state']['list'] = 'sec'
                 save(output_dataset, 'data_output', rank=f"{run_config.rank}")
 
     run_config.barrier()
     del (output_dataset.params['state'])
-    logging.info("END Calculation of a correlation functions")
+    logging.getLogger(__name__).info("END Calculation of a correlation functions")
 
 
 def reduction_output(quantities, run_config):
-    logging.info(f"Reduction output data INIT")
+    logging.getLogger(__name__).info(f"Reduction output data INIT")
     output = {}
     for k in quantities.keys():
         output[k] = run_config.reduce(quantities[k])
-    logging.info(f"Reduction output data END")
+    logging.getLogger(__name__).info(f"Reduction output data END")
     return output
 
 
-def calc_exact_laws_from_config(config_file, run_config, backup):
+def calc_exact_laws_from_config(run_config, backup):
     '''
     config_file example:
         [INPUT_DATA]
@@ -145,19 +145,17 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
         coord = logcyl
     '''
 
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
-    
-
     # translate information useful for the computation
-    input_filename = f"{config['INPUT_DATA']['path']}/{config['INPUT_DATA']['name']}.h5"
-    output_filename = f"{config['OUTPUT_DATA']['path']}/{config['INPUT_DATA']['name']}_{config['OUTPUT_DATA']['name']}.h5"
+    if config.use_reduced_datasets.get():
+        input_filename = f"{config.preprocess_output_data_path.get()}/{config.preprocess_output_data_name.get()}_bin{config.preprocess_output_data_reduction.get()}.h5"
+    else:
+        input_filename = f"{config.preprocess_output_data_path.get()}/{config.preprocess_output_data_name.get()}.h5"
+    output_filename = f"{config.computation_output_path.get()}/{config.preprocess_output_data_name.get()}_{config.computation_output_name.get()}.h5"
     input_grid = {}
-    input_grid["coord"] = config['GRID_PARAMS']["coord"]
-    input_grid["kind"] = config['GRID_PARAMS']["kind"]
-    input_grid["Nmax_scale"] = int(eval(config['GRID_PARAMS']["Nmax_scale"]))
-    input_grid["Nmax_list"] = int(eval(config['GRID_PARAMS']["Nmax_list"]))
+    input_grid["coord"] = config.grid_coords.get()
+    input_grid["kind"] = config.grid_kind.get()
+    input_grid["Nmax_scale"] = config.grid_n_max_scale.get()
+    input_grid["Nmax_list"] = config.grid_n_max_list.get()
 
     # Init Original_dataset
     if backup.already:
@@ -204,11 +202,11 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     backup.save(output_dataset, 'data_output_final', rank=f"{run_config.rank}")
 
     # # ## Enregistrement données finales
-    # logging.info(f"Record final result in {output_filename} INIT")
+    # logging.getLogger(__name__).info(f"Record final result in {output_filename} INIT")
     # if mpi.rank == 0:
     #     output_dataset.record_to_h5file(output_filename)
     #     with h5.File(output_filename, "a") as file:
     #         file.create_group("param_origin")
     #         for k in original_dataset.params.keys():
     #             file["param_origin"].create_dataset(k, data=original_dataset.params[k])
-    # logging.info(f"Record final result END")
+    # logging.getLogger(__name__).info(f"Record final result END")

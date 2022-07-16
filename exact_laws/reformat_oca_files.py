@@ -1,5 +1,3 @@
-import os.path
-
 from exact_laws.preprocessing.process_on_oca_files import reformat_oca_files
 import argparse
 from exact_laws import logging

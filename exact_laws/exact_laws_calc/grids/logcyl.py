@@ -1,13 +1,13 @@
 import numpy as np
 import random
-import logging
 
 from .incgrid import IncGrid
 
+
 def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind="cls"):
-    axis = ['lz','lperp','listperp']
+    axis = ['lz', 'lperp', 'listperp']
     grid = {}
-    
+
     # liste des échelles parallèles (indexes des coupes parallèles)
     grid["lz"] = np.unique(np.logspace(0, np.log10(original_grid.N[2]), Nmax_scale, endpoint=True, dtype=int))
     grid["lz"] = np.array(np.append([0], grid["lz"]))
@@ -56,38 +56,40 @@ def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nma
         if grid["count"][r] > Nmax_list:
             if kind == "cls":
                 grid["listperp"][r] = [x for _, x in sorted(zip(grid["listnorm"][r], grid["listperp"][r]))][
-                    :Nmax_list
-                ]
+                                      :Nmax_list
+                                      ]
             elif kind == "rdm":
                 grid["listperp"][r] = random.sample(grid["listperp"][r], Nmax_list)
             grid["count"][r] = Nmax_list
-    
-    return IncGrid(original_grid, N=np.array([N_par, N_perp, np.max(grid["count"])], dtype=int), axis=axis, coords=grid, kind=kind)
+
+    return IncGrid(original_grid, N=np.array([N_par, N_perp, np.max(grid["count"])], dtype=int), axis=axis, coords=grid,
+                   kind=kind)
+
 
 def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
-        N = incgrid.spatial_grid.N
-        
-        list_prim = []
-        for z in incgrid.coords["lz"]:
-            for perp in range(len(incgrid.coords["lperp"])):
-                for vect_perp in incgrid.coords["listperp"][perp]:
-                    list_prim.append((vect_perp[0], vect_perp[1], z))
-        set_prim = set(list_prim)
-        list_prim = list(set_prim)
-        
-        list_sec = []
-        for vect_prim in list_prim:
-            for dirr in range(len(N)):
-                for i in range(-nb_sec_by_dirr, nb_sec_by_dirr):
-                    if i != 0:
-                        vect = list(vect_prim)
-                        vect[dirr] = (vect[dirr] + i) % N[dirr]
-                        vect = (*vect,)
-                        if not vect in set_prim:
-                            list_sec.append(vect)
-        list_sec = list(set(list_sec))
-        return list_prim, list_sec, nb_sec_by_dirr
+    N = incgrid.spatial_grid.N
+
+    list_prim = []
+    for z in incgrid.coords["lz"]:
+        for perp in range(len(incgrid.coords["lperp"])):
+            for vect_perp in incgrid.coords["listperp"][perp]:
+                list_prim.append((vect_perp[0], vect_perp[1], z))
+    set_prim = set(list_prim)
+    list_prim = list(set_prim)
+
+    list_sec = []
+    for vect_prim in list_prim:
+        for dirr in range(len(N)):
+            for i in range(-nb_sec_by_dirr, nb_sec_by_dirr):
+                if i != 0:
+                    vect = list(vect_prim)
+                    vect[dirr] = (vect[dirr] + i) % N[dirr]
+                    vect = (*vect,)
+                    if not vect in set_prim:
+                        list_sec.append(vect)
+    list_sec = list(set(list_sec))
+    return list_prim, list_sec, nb_sec_by_dirr
+
 
 def load(original_grid, Nmax_scale, Nmax_list, kind, **kargs):
     return build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind)
-    
