@@ -1,12 +1,7 @@
-import sys
 import numpy as np
-import numexpr as ne
 import h5py as h5
-from datetime import datetime
-from contextlib import redirect_stdout
 from .. import logging
-import configparser
-
+from .. import config
 from ..exact_laws_calc.laws import LAWS
 from ..exact_laws_calc.terms import TERMS
 from .quantities import QUANTITIES
@@ -43,7 +38,7 @@ def list_quantities(laws, terms, quantities):
 
 
 def from_OCA_files_to_standard_h5_file(
-    input_folder, output_folder, name, cycle, laws, terms, quantities, sim_type, physical_params, reduction
+        input_folder, output_folder, name, cycle, laws, terms, quantities, sim_type, physical_params, reduction
 ):
     """
     Input: inputdic (Dictionnaire créé par Data_process.inputfile_to_dict())
@@ -164,7 +159,8 @@ def from_OCA_files_to_standard_h5_file(
 
     return output_file
 
-def reformat_oca_files(config_file):
+
+def reformat_oca_files():
     """
     config_file example: 
         [INPUT_DATA]
@@ -183,23 +179,22 @@ def reformat_oca_files(config_file):
         [PHYSICAL_PARAMS]
         di = 1
     """
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    
+
     file_process = from_OCA_files_to_standard_h5_file(
-        input_folder=config["INPUT_DATA"]["path"],
-        output_folder=config["OUTPUT_DATA"]["path"],
-        name=config["OUTPUT_DATA"]["name"],
-        sim_type=config["INPUT_DATA"]["sim_type"],
-        cycle=config["INPUT_DATA"]["cycle"],
-        quantities=eval(config["OUTPUT_DATA"]["quantities"]),
-        laws=eval(config["OUTPUT_DATA"]["laws"]),
-        terms=eval(config["OUTPUT_DATA"]["terms"]),
+        input_folder=config.preprocess_input_data_path.get(),
+        output_folder=config.preprocess_output_data_path.get(),
+        name=config.preprocess_output_data_name.get(),
+        sim_type=config.preprocess_input_data_sim_type.get(),
+        cycle=config.preprocess_input_data_cycle.get(),
+        quantities=config.enabled_quantities.get(),
+        laws=config.enabled_laws.get(),
+        terms=config.enabled_terms.get(),
         reduction=1,
-        physical_params={k: float(eval((config["PHYSICAL_PARAMS"][k]))) for k in config["PHYSICAL_PARAMS"].keys()},
+        physical_params={'di': config.physical_params_di.get()}
     )
     process_on_standard_h5_file.check_file(file_process)
-    
-    if config["OUTPUT_DATA"]["reduction"] != "1":
-        file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+
+    if config.preprocess_output_data_reduction.get() != 1:
+        file_process = process_on_standard_h5_file.data_binning(file_process,
+                                                                config.preprocess_output_data_reduction.get())
         process_on_standard_h5_file.check_file(file_process)

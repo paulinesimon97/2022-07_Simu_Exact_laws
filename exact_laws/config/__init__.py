@@ -103,4 +103,4 @@ grid_n_max_list = ConfigEntry('COMPUTATION_GRID', 'n_max_list', 3, type_ctor=int
 grid_kind = ConfigEntry('COMPUTATION_GRID', 'kind', 'cls')
 grid_coords = ConfigEntry('COMPUTATION_GRID', 'coords', 'logcyl')
 
-physical_params = ConfigEntry('PHYSICAL_PARAMS', 'di', 1, type_ctor=float)
+physical_params_di = ConfigEntry('PHYSICAL_PARAMS', 'di', 1, type_ctor=float)
