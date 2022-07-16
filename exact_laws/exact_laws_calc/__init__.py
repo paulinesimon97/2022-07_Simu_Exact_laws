@@ -2,15 +2,13 @@ import logging
 import numpy as np
 import configparser
 
-from ..running_tools.mpi_wrap import Mpi
-from ..running_tools.save_wrap import Save
 from .datasets import load_from_standard_file, load
 from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid
 from .terms import TERMS
 from .laws import LAWS
 
 
-def initialise_original_dataset(input_filename, mpi):
+def initialise_original_dataset(input_filename, run_config):
     logging.info("Initialisation original data INIT")
     original_dataset, laws, terms = load_from_standard_file(input_filename)
     logging.info("Initialisation original data END")
@@ -61,7 +59,7 @@ def init_ouput_quantities(listprim, listsec, terms):
     return output_quantities
 
 
-def calc_terms(dataset, output_dataset, mpi, save, save_setp=10):
+def calc_terms(dataset, output_dataset, run_config, save, backup_setp=10):
     # dataset contient au moins les quantités nécessaires au calcul
     # grid_prim = [Np][3] et grid_sec = [Ns][3] contiennent des vecteurs à calculer sous le format [x,y,z]
     # terms contient les noms des termes à calculer 
@@ -77,16 +75,16 @@ def calc_terms(dataset, output_dataset, mpi, save, save_setp=10):
     if saved_list == 'prim':
         state_index = output_dataset.params['state']['index']
         vectors = [(index, vector) for index, vector in enumerate(output_dataset.grid.coords['listprim']) if
-                   (index >= state_index) and ((index % mpi.size) == mpi.rank)]
+                   (index >= state_index) and ((index % run_config.size) == run_config.rank)]
         for index, vector in vectors:
             for term in terms:
                 output_quantities[term][0][state_index + index] = TERMS[term].calc(vector, Ndat,
                                                                                    **dataset.quantities)
-            if (index % (mpi.size * save_setp)) == 0:
-                mpi.barrier()  # TODO check this
+            if (index % (run_config.size * backup_setp)) == 0:
+                run_config.barrier()  # TODO check this
                 logging.info(f'... End {index} of listprim')
                 output_dataset.params['state']['index'] = index + 1
-                save(output_dataset, 'data_output', rank=f"{mpi.rank}")
+                save(output_dataset, 'data_output', rank=f"{run_config.rank}")
 
         output_dataset.params['state']['index'] = 0
         saved_list = 'sec'
@@ -95,33 +93,33 @@ def calc_terms(dataset, output_dataset, mpi, save, save_setp=10):
         terms_flux = list(filter(lambda e: e.startswith('flux'), terms))
         state_index = output_dataset.params['state']['index']
         vectors = [(index, vector) for index, vector in enumerate(output_dataset.grid.coords['listsec']) if
-                   (index >= state_index) and ((index % mpi.size) == mpi.rank)]
+                   (index >= state_index) and ((index % run_config.size) == run_config.rank)]
         for index, vector in vectors:
             for term in terms_flux:
                 output_quantities[term][1][state_index + index] = TERMS[term].calc(vector, Ndat,
                                                                                    **dataset.quantities)
-            if (index % (mpi.size * save_setp)) == 0:
-                mpi.barrier()  # TODO check this
+            if (index % (run_config.size * backup_setp)) == 0:
+                run_config.barrier()  # TODO check this
                 logging.info(f'... End {index} of listsec')
                 output_dataset.params['state']['index'] = index + 1
                 output_dataset.params['state']['list'] = 'sec'
-                save(output_dataset, 'data_output', rank=f"{mpi.rank}")
+                save(output_dataset, 'data_output', rank=f"{run_config.rank}")
 
-    mpi.barrier()
+    run_config.barrier()
     del (output_dataset.params['state'])
     logging.info("END Calculation of a correlation functions")
 
 
-def reduction_output(quantities, mpi):
+def reduction_output(quantities, run_config):
     logging.info(f"Reduction output data INIT")
     output = {}
     for k in quantities.keys():
-        output[k] = mpi.reduce(quantities[k])
+        output[k] = run_config.reduce(quantities[k])
     logging.info(f"Reduction output data END")
     return output
 
 
-def calc_exact_laws_from_config(config_file, mpi=Mpi()):
+def calc_exact_laws_from_config(config_file, run_config, backup):
     '''
     config_file example:
         [INPUT_DATA]
@@ -134,9 +132,11 @@ def calc_exact_laws_from_config(config_file, mpi=Mpi()):
 
 
         [RUN_PARAMS]
+        config = NOP
+        numbap = O
         nblayer = 8
         nbbuf = 4
-        save = None
+        backup = None
 
         [GRID_PARAMS]
         Nmax_scale = 40
@@ -148,13 +148,7 @@ def calc_exact_laws_from_config(config_file, mpi=Mpi()):
     config = configparser.ConfigParser()
     config.read(config_file)
 
-    # configure the potential parallelisation process (add old way params)
-    mpi.set_nblayer(int(eval(config['RUN_PARAMS']['nblayer'])))
-    mpi.set_bufnum(int(eval(config['RUN_PARAMS']['nbbuf'])))
-
-    # configure the saving process (always valid way)
-    save = Save()
-    save.configure(eval(config['RUN_PARAMS']["save"]), mpi.time_deb, mpi.rank)
+    
 
     # translate information useful for the computation
     input_filename = f"{config['INPUT_DATA']['path']}/{config['INPUT_DATA']['name']}.h5"
@@ -166,28 +160,28 @@ def calc_exact_laws_from_config(config_file, mpi=Mpi()):
     input_grid["Nmax_list"] = int(eval(config['GRID_PARAMS']["Nmax_list"]))
 
     # Init Original_dataset
-    if save.already:
-        original_dataset = save.download('data_origin')
+    if backup.already:
+        original_dataset = backup.download('data_origin')
     else:
-        original_dataset, laws, terms = initialise_original_dataset(input_filename, mpi)
-        if mpi.rank == 0:
-            save.save(original_dataset, 'data_origin')
+        original_dataset, laws, terms = initialise_original_dataset(input_filename, run_config)
+        if run_config.rank == 0:
+            backup.save(original_dataset, 'data_origin')
     original_dataset.check('original_dataset')
 
     # Init Incremental_grid
-    if save.already:
-        incremental_grid = save.download('inc_grid')
+    if backup.already:
+        incremental_grid = backup.download('inc_grid')
     else:
         incremental_grid = load_incgrid_from_grid(original_grid=original_dataset.grid, **input_grid)
-        if mpi.rank == 0:
-            save.save(incremental_grid, 'inc_grid')
+        if run_config.rank == 0:
+            backup.save(incremental_grid, 'inc_grid')
 
     # Init Output_dataset 
-    if save.already:
-        output_dataset = save.download('data_output', rank=f"{mpi.rank}")
+    if backup.already:
+        output_dataset = backup.download('data_output', rank=f"{run_config.rank}")
     else:
         output_dataset = initialise_output_dataset(incremental_grid, original_dataset, laws, terms)
-        save.save(output_dataset, 'data_output', rank=f"{mpi.rank}")
+        backup.save(output_dataset, 'data_output', rank=f"{run_config.rank}")
     output_dataset.check('output_dataset')
 
     # ## CALCUL LOI EXACTE
@@ -195,19 +189,19 @@ def calc_exact_laws_from_config(config_file, mpi=Mpi()):
         calc_terms(
             dataset=original_dataset,
             output_dataset=output_dataset,
-            mpi=mpi,
-            save=save.save
+            run_config=run_config,
+            save=backup.save
         )
 
-    save.save(output_dataset, 'data_output', rank=f"{mpi.rank}")
+    backup.save(output_dataset, 'data_output', rank=f"{run_config.rank}")
     # ## DIVERGENCE
     div_quantities = div_on_incgrid(incremental_grid, output_dataset)
     for k in div_quantities.keys():
         output_dataset.quantities[k] = [div_quantities[k]]
 
     # ## RASSEMBLEMENT
-    output_dataset.quantities = reduction_output(output_dataset.quantities, mpi)
-    save.save(output_dataset, 'data_output_final', rank=f"{mpi.rank}")
+    output_dataset.quantities = reduction_output(output_dataset.quantities, run_config)
+    backup.save(output_dataset, 'data_output_final', rank=f"{run_config.rank}")
 
     # # ## Enregistrement données finales
     # logging.info(f"Record final result in {output_filename} INIT")

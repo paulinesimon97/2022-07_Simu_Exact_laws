@@ -2,7 +2,7 @@ import os
 import pickle as pkl
 import logging
 
-class Save():
+class Backup():
     def __init__(self):
         pass
     
