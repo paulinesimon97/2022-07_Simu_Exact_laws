@@ -7,11 +7,7 @@ class FluxDvdvdv(AbstractTerm):
     def __init__(self):
         pass
     
-    def calc_old(self, values) -> (float or List[float]):
-        return self.flux(("vx", "vy", "vz"), ("vx", "vy", "vz"), ("vx", "vy", "vz"), datadic=values)
-    
     def calc(self, vector:List[int], cube_size:List[int], vx, vy, vz, **kwarg) -> List[float]:
-        #return calc_source_with_numba(np.array(vector), np.array(cube_size), f2, vx)
         return calc_flux_with_numba(calc_in_point, *vector, *cube_size, vx, vy, vz)
 
     def variables(self) -> List[str]:

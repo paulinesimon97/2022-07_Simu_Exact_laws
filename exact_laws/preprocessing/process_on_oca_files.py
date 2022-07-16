@@ -1,14 +1,11 @@
-import sys
 import numpy as np
 import numexpr as ne
 import h5py as h5
-from datetime import datetime
-from contextlib import redirect_stdout
 import logging
 import configparser
 
-from ..exact_laws_calc.laws import LAWS
-from ..exact_laws_calc.terms import TERMS
+from ..el_calc_mod.laws import LAWS
+from ..el_calc_mod.terms import TERMS
 from .quantities import QUANTITIES
 from . import process_on_standard_h5_file
 

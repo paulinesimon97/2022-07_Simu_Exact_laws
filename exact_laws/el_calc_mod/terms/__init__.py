@@ -1,12 +1,10 @@
 import importlib
 import os
 
-from . import source_test
-
 here = os.path.dirname(os.path.realpath(__file__))
 
 def load_term(name):
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.terms.{name}", "*")
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.terms.{name}", "*")
     return mod.load()
 
 def load_all():

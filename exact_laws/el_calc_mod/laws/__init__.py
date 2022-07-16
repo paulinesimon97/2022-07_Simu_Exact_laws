@@ -5,7 +5,7 @@ import os
 here = os.path.dirname(os.path.realpath(__file__))
 
 def load_law(name):
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.laws.{name}", "*")
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.laws.{name}", "*")
     return mod.load()
 
 

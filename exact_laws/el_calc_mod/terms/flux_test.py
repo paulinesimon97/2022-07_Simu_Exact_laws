@@ -1,6 +1,5 @@
 from typing import List
 from numba import njit
-import numpy as np
 from .abstract_term import AbstractTerm, calc_flux_with_numba
 
 

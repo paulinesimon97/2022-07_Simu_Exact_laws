@@ -9,7 +9,7 @@ class Dataset:
         - params[dict]: contient d'autres informations"""
 
     def __init__(self, params={}, quantities={}, grid=Grid()):
-        """Initialisation of the mother class data"""
+        """Initialisation of the class data"""
         self.params = params
         self.quantities = quantities  # dictionary 
         self.grid = grid  # grid

@@ -3,23 +3,19 @@ from numba import njit
 
 from .abstract_term import AbstractTerm, calc_flux_with_numba
 
-class FluxDbdbdv(AbstractTerm):
+class FluxDvdbdb(AbstractTerm):
     def __init__(self):
         pass
     
-    def calc_old(self, values) -> (float or List[float]):
-        return self.flux(("Ibx", "Iby", "Ibz"), ("Ibx", "Iby", "Ibz"), ("vx", "vy", "vz"), datadic=values)
-    
     def calc(self, vector:List[int], cube_size:List[int], vx, vy, vz, Ibx, Iby, Ibz, **kwarg) -> List[float]:
-        #return calc_source_with_numba(np.array(vector), np.array(cube_size), f2, vx)
         return calc_flux_with_numba(calc_in_point, *vector, *cube_size, vx, vy, vz, Ibx, Iby, Ibz)
 
     def variables(self) -> List[str]:
         return ['Ib','v']
 
 def load():
-    return FluxDbdbdv()
-
+    return FluxDvdbdb()
+    
 @njit
 def calc_in_point(i, j, k, ip, jp, kp, vx, vy, vz, Ibx, Iby, Ibz):
     
@@ -31,10 +27,8 @@ def calc_in_point(i, j, k, ip, jp, kp, vx, vy, vz, Ibx, Iby, Ibz):
     dIby = Iby[ip,jp,kp] - Iby[i,j,k]
     dIbz = Ibz[ip,jp,kp] - Ibz[i,j,k]
     
-    fx = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvx
-    fy = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvy
-    fz = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvz
+    fx = (dvx * dIbx + dvy * dIby + dvz * dIbz) * dIbx
+    fy = (dvx * dIbx + dvy * dIby + dvz * dIbz) * dIby
+    fz = (dvx * dIbx + dvy * dIby + dvz * dIbz) * dIbz
     
     return fx, fy, fz
-    
-    

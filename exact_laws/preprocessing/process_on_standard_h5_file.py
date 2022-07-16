@@ -1,7 +1,6 @@
-import os, sys
+import os
 import h5py as h5
 import numpy as np
-from datetime import datetime
 import logging
 
 def verif_file_existence(filename, message):

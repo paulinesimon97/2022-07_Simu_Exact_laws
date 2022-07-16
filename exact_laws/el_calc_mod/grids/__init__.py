@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 from warnings import warn
 import importlib
 import logging
@@ -38,7 +38,7 @@ def load_incgrid_from_grid(coord, **kargs):
     Returns:
         IncGrid object
     """
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.grids.{coord}", "*")
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
     return mod.load(**kargs)
 
 def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
@@ -50,7 +50,7 @@ def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
     Returns:
         Grid object that contains list of coordinates
     """
-    mod = importlib.import_module(f"exact_laws.exact_laws_calc.grids.{coord}", "*")
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
     coords = {}
     coords['listprim'], coords['listsec'], coords['nb_sec_by_dirr'] = mod.build_listcoords(incgrid, nb_sec_by_dirr)    
     return load_grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
@@ -71,7 +71,7 @@ def div_on_incgrid(incgrid, dataset_terms):
                 div_point = 0
                 for dirr in range(3):
                     point_sec = []
-                    for i in range(-nb_sec_by_dirr, nb_sec_by_dirr):
+                    for i in range(-nb_sec_by_dirr, nb_sec_by_dirr+1):
                         if not i == 0:
                             vect = list(vect_prim)
                             vect[dirr] = (vect[dirr] + i) % N[dirr]
@@ -98,3 +98,6 @@ def div_on_incgrid(incgrid, dataset_terms):
     logging.info("END Calculation of the divergence")
     return output
 
+def reorganise_quantities(coord, incgrid, output_grid, output_quantities, nb_sec_by_dirr):
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
+    return mod.reorganise_quantities(incgrid, output_grid, output_quantities, nb_sec_by_dirr)

@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import logging
 
 from .incgrid import IncGrid
 
@@ -58,11 +57,18 @@ def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nma
                 grid["listperp"][r] = [x for _, x in sorted(zip(grid["listnorm"][r], grid["listperp"][r]))][
                     :Nmax_list
                 ]
+                grid["listnorm"][r] = [x for x,_ in sorted(zip(grid["listnorm"][r], grid["listperp"][r]))][
+                    :Nmax_list
+                ]
+                
             elif kind == "rdm":
                 grid["listperp"][r] = random.sample(grid["listperp"][r], Nmax_list)
             grid["count"][r] = Nmax_list
     
     return IncGrid(original_grid, N=np.array([N_par, N_perp, np.max(grid["count"])], dtype=int), axis=axis, coords=grid, kind=kind)
+
+def load(original_grid, Nmax_scale, Nmax_list, kind, **kargs):
+    return build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind)
 
 def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
         N = incgrid.spatial_grid.N
@@ -78,7 +84,7 @@ def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
         list_sec = []
         for vect_prim in list_prim:
             for dirr in range(len(N)):
-                for i in range(-nb_sec_by_dirr, nb_sec_by_dirr):
+                for i in range(-nb_sec_by_dirr, nb_sec_by_dirr+1):
                     if i != 0:
                         vect = list(vect_prim)
                         vect[dirr] = (vect[dirr] + i) % N[dirr]
@@ -88,6 +94,48 @@ def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
         list_sec = list(set(list_sec))
         return list_prim, list_sec, nb_sec_by_dirr
 
-def load(original_grid, Nmax_scale, Nmax_list, kind, **kargs):
-    return build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nmax_list, kind)
+def reorganise_quantities(incgrid, output_grid, output_quantities, nb_sec_by_dirr=1):
+    output = {}
+    shape_scalar = incgrid.N
+    shape_vector = [*shape_scalar, 3]
+    shape_termdiv = [*shape_vector, 2*nb_sec_by_dirr]
+    list_flux = []
+    list_other = []
+    for k in output_quantities:
+        if k.startswith('flux'):
+            output[k] = np.zeros(shape_vector)
+            list_flux.append(k)
+            output['term_div_'+k] = np.zeros(shape_termdiv)
+        else: 
+            output[k] = np.zeros(shape_scalar)
+            list_other.append(k)
+    for ind_z, z in enumerate(incgrid.coords["lz"]):
+        for ind_perp in range(incgrid.N[1]):
+            for ind_vect, vect_perp in enumerate(incgrid.coords["listperp"][ind_perp]):
+                vect_prim = (vect_perp[0], vect_perp[1], z)
+                prim_index = output_grid.coords['listprim'].index(vect_prim)
+                for t in list_flux: 
+                    output[t][ind_z,ind_perp,ind_vect] = [*output_quantities[t][0][prim_index]]
+                for t in list_other:
+                    output[t][ind_z,ind_perp,ind_vect] = output_quantities[t][0][prim_index]
+                sec_list = list(np.arange(-nb_sec_by_dirr, nb_sec_by_dirr+1,1))
+                sec_list.remove(0)
+                for dirr in range(len(incgrid.spatial_grid.N)):
+                    for ind_point, value in enumerate(sec_list):
+                        vect = list(vect_prim)
+                        vect[dirr] = (vect[dirr] + value) % incgrid.spatial_grid.N[dirr]
+                        vect = tuple(vect)
+                        loc = -1
+                        try:
+                            index = output_grid.coords['listprim'].index(vect)
+                            loc = 0
+                        except:
+                            index = output_grid.coords['listsec'].index(vect)
+                            loc = 1
+                        for t in list_flux: 
+                            output['term_div_'+t][ind_z,ind_perp,ind_vect,dirr,ind_point] = output_quantities[t][loc][index][dirr]
+    return output
+        
+
+
     

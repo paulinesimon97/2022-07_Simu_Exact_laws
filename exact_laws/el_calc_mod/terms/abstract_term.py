@@ -1,8 +1,5 @@
 from typing import List
-import numpy as np
-import numexpr as ne
 from numba import njit, prange
-from functools import reduce
 
 
 class AbstractTerm:
