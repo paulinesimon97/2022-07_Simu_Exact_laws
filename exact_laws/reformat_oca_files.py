@@ -10,10 +10,9 @@ parser.add_argument("-f", "--config-file", help="config file", default='example_
 parser.add_argument("-q", "--list-quantities", help="List available quantities", action="store_true")
 args = parser.parse_args()
 
-logging.basicConfig(filename=f"reformat_oca_files_{datetime.now().strftime('%d%m%Y_%H%M')}.log", 
-                    level=logging.DEBUG, 
-                    format='%(asctime)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M:%S'
+logging.basicConfig(filename=f"reformat_oca_files_{datetime.now().strftime('%d%m%Y_%H%M%S')}.log", 
+                    level=logging.INFO, 
+                    format='%(asctime)s %(module)-12s %(levelname)-8s %(message)s',
                     )
 
 if __name__ == "__main__":

@@ -170,6 +170,6 @@ class Mpi:
         self.barrier()
         filename = f"{folder}/{folder[4:]}_rank{self.rank}.log"
         logging.basicConfig(filename=filename, 
-                        level=logging.DEBUG, 
-                        format='%(asctime)s %(levelname)-8s %(message)s',
-                        )
+                        level=logging.INFO, 
+                    format='%(asctime)s %(module)-12s %(levelname)-8s %(message)s',
+                    )

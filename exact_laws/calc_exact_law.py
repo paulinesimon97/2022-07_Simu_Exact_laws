@@ -6,6 +6,7 @@ from exact_laws.exact_laws_calc import calc_exact_laws_from_config
 mpi = mpi_wrap.Mpi()
 mpi.configure_log('calc_exact_law')
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--config-file", help="config file", default='example_input_calc.txt')
 parser.add_argument("-q", "--list-laws", help="List available laws", action="store_true")
