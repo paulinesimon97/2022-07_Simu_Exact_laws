@@ -3,9 +3,10 @@ import numpy as np
 import configparser
 
 from .datasets import load_from_standard_file, load, record_incdataset_to_h5file
-from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid, reorganise_quantities
+from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid, reorganise_quantities, reformat_grid_compatible_to_h5
 from .terms import TERMS
 from .laws import LAWS
+from ..preprocessing import process_on_standard_h5_file
 
 
 def initialise_original_dataset(input_filename):
@@ -133,10 +134,11 @@ def save_output_dataset_on_incgrid(output_filename, output_dataset, incremental_
                                                output_grid = output_dataset.grid, 
                                                output_quantities = output_dataset.quantities,
                                                nb_sec_by_dirr = nb_sec_by_dirr)
+    incgrid_h5 = reformat_grid_compatible_to_h5(coord=coord, incgrid= incremental_grid)
     params = original_dataset.params
     for k in output_dataset.params:
         params[k] = output_dataset.params[k]
-    incgrid_dataset = load(quantities=incgrid_quantities, grid=incremental_grid, params=params)
+    incgrid_dataset = load(quantities=incgrid_quantities, grid=incgrid_h5, params=params)
     record_incdataset_to_h5file(output_filename, incgrid_dataset)
     logging.info(f"END Record final result ")
 
@@ -236,4 +238,5 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     # ## Enregistrement données finales sur la grille incrémentale
     if run_config.rank == 0:
         save_output_dataset_on_incgrid(output_filename, output_dataset, incremental_grid, original_dataset, input_grid["coord"])
+        process_on_standard_h5_file.check_file(output_filename)
     

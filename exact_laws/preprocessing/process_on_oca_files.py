@@ -11,6 +11,7 @@ from . import process_on_standard_h5_file
 
 
 def extract_simu_param_from_OCA_file(file, dic_param, param):
+    dic_param['axis'] = ['x','y','z']
     dic_param["L"] = np.array([file[f"{param}/x"][-1], file[f"{param}/y"][-1], file[f"{param}/z"][-1]])
     dic_param["N"] = np.array(
         [

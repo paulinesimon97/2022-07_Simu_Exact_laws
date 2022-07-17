@@ -74,7 +74,11 @@ def div_on_incgrid(incgrid, dataset_terms):
                     for i in range(-nb_sec_by_dirr, nb_sec_by_dirr+1):
                         if not i == 0:
                             vect = list(vect_prim)
-                            vect[dirr] = (vect[dirr] + i) % N[dirr]
+                            vect[dirr] = (
+                        (vect[dirr] + i)
+                        - (N[dirr] * ((vect[dirr] + i) >= (N[dirr] / 2)))
+                        + (N[dirr] * ((vect[dirr] + i) <= (-N[dirr] / 2)))
+                    )
                             vect = tuple(vect)
                             loc = -1
                             try:
@@ -98,6 +102,10 @@ def div_on_incgrid(incgrid, dataset_terms):
     logging.info("END Calculation of the divergence")
     return output
 
-def reorganise_quantities(coord, incgrid, output_grid, output_quantities, nb_sec_by_dirr):
+def reorganise_quantities(coord, incgrid, output_grid, output_quantities, nb_sec_by_dirr=1):
     mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
     return mod.reorganise_quantities(incgrid, output_grid, output_quantities, nb_sec_by_dirr)
+
+def reformat_grid_compatible_to_h5(coord, incgrid):
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
+    return mod.reformat_grid_compatible_to_h5(incgrid)
