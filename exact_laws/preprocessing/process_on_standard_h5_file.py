@@ -14,19 +14,45 @@ def check_file(filename):
     Les informations délivrées à propos des cubes de données sont la moyenne et l'écart-type.
     """
     logging.info(f"Check file {filename} ...") 
-    message = f"... file {filename} contains:"
-    with h5.File(filename, "r") as g:
-        message += f"\n\t param:"
-        for param in g["param"].keys():
-            message += f"\n\t - {param} : {np.array(g[f'param/{param}'])}"
-        message += f"\n\t quantities:"
-        for quantity in g.keys():
-            if not "param" in quantity:
-                tab = np.array(g[quantity])
-                #tab = np.sort(np.array(g[quantity]).flatten())
-                message += f"\n\t - {quantity} : {np.mean(tab):.5} $\pm$ {np.std(tab):.5}"
-                del tab                
+    message = describ_file(filename)              
     logging.info(message+"\n") 
+
+def recursive_describ_of_h5file(file, path='/'):
+    message = ''
+    for k in file[path].keys():
+        splitted_key = str(file[path + '/' + k]).split()
+        if splitted_key[1] == 'group':
+            message += f"\n\t - {k}:"
+            message += recursive_describ_of_h5file(file, path + '/' + k).replace('\n\t', '\n\t\t')
+        else:
+            tab = np.array(file[path + '/' + k])
+            size = len(np.shape(tab))
+            if size <= 1:
+                message += f"\n\t - {k}: {tab}"
+            else : 
+                message += f"\n\t - {k}: {np.nanmean(tab):.5} $\pm$ {np.nanstd(tab):.5}"
+    return message
+    
+def describ_file(filename):
+    message = f"... file {filename} contains:"
+    with h5.File(filename, 'r') as f:
+            message += recursive_describ_of_h5file(f)
+    return message
+
+def recursive_copy_of_file(file_to_copy, output_file, path='/', input_to_record={}):
+    for k in file_to_copy[path].keys():
+        splitted_key = str(file_to_copy[path + '/' + k]).split()
+        if splitted_key[1] == 'group':
+            output_file[path].create_group(k)
+            recursive_copy_of_file(file_to_copy, output_file, path + '/' + k)
+        else:
+            output_file[path].create_dataset(k, data=input_to_record.get(k, h5.Empty('f')))
+
+
+def copy_struct_h5file(name_file_to_copy, name_output_file, input_to_record={}):
+    with h5.File(name_file_to_copy, 'r') as fc:
+        with h5.File(name_output_file, 'w') as fo:
+            recursive_copy_of_file(fc, fo, input_to_record=input_to_record)
     
 
 def data_binning(file_process, bin):
