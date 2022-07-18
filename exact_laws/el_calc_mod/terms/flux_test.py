@@ -20,7 +20,7 @@ def load():
 
 @njit
 def calc_in_point(i, j, k, ip, jp, kp, vx, vy, vz):
-    f1 = vx[i, j, k] * vx[ip, jp, kp]
-    f2 = vy[i, j, k] * vy[ip, jp, kp]
-    f3 = vz[i, j, k] * vz[ip, jp, kp]
+    f1 =  vx[ip, jp, kp] - vx[i, j, k]
+    f2 =  vy[ip, jp, kp] - vy[i, j, k]
+    f3 =  vz[ip, jp, kp] - vz[i, j, k]
     return f1, f2, f3
