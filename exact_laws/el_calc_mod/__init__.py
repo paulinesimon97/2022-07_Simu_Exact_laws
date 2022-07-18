@@ -34,7 +34,7 @@ def list_terms_and_coeffs(laws, terms, physical_params):
     coeffs = {}
     for law in laws:
         terms_for_law, coeffs[law] = LAWS[law].terms_and_coeffs(physical_params)
-        list_terms.append(*terms_for_law)
+        list_terms += terms_for_law
     return list(set(list_terms)), coeffs
 
 
@@ -60,7 +60,7 @@ def init_ouput_quantities(listprim, listsec, terms):
     return output_quantities
 
 
-def calc_terms(dataset, output_dataset, run_config, save, backup_setp=10):
+def calc_terms(dataset, output_dataset, run_config, save, backup_setp=5000):
     # dataset contient au moins les quantités nécessaires au calcul
     # grid_prim = [Np][3] et grid_sec = [Ns][3] contiennent des vecteurs à calculer sous le format [x,y,z]
     # terms contient les noms des termes à calculer 

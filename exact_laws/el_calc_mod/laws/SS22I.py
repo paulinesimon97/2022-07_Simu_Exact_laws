@@ -11,7 +11,7 @@ class Ss22i(AbstractLaw):
         coeffs = {} 
         coeffs["div_flux_dvdvdv"] = - physical_params["rho_mean"] / 4
         coeffs["div_flux_dbdbdv"] = - physical_params["rho_mean"] / 4
-        coeffs["div_flux_dbdbdv"] = physical_params["rho_mean"] / 2
+        coeffs["div_flux_dvdbdb"] = physical_params["rho_mean"] / 2
         return self.terms, coeffs
 
     def variables(self) -> List[str]:
