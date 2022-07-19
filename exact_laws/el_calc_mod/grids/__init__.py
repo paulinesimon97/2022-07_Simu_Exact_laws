@@ -105,7 +105,7 @@ def div_on_incgrid(incgrid, dataset_terms):
                         values.append(dataset_terms.quantities[t][points_sec[dirr][i][0]][points_sec[dirr][i][1]][dirr])
                     div_point += cdiff(
                         tab = values,
-                        length_case=c[0],
+                        length_case=c[dirr],
                         precision=nb_sec_by_dirr * 2,
                         period=False,
                         point=True,
