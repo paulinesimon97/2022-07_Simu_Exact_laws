@@ -35,7 +35,8 @@ def record_incdataset_to_h5file(filename, dataset):
             else: 
                 f["params"].create_group("coeffs")
                 for k in dataset.params['coeffs']:
-                    f["params"]['coeffs'].create_dataset(k, data=dataset.params['coeffs'][k])
+                    for t in dataset.params['coeffs'][k]:
+                        f["params"]['coeffs'].create_dataset(k+'_'+t, data=dataset.params['coeffs'][k][t])
         for key in dataset.quantities:
             f.create_dataset(key, data=dataset.quantities[key])
         f.create_group("grid")

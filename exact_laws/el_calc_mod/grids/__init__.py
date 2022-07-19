@@ -55,6 +55,28 @@ def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
     coords['listprim'], coords['listsec'], coords['nb_sec_by_dirr'] = mod.build_listcoords(incgrid, nb_sec_by_dirr)    
     return load_grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
 
+def coordinate_sec_in_primsec_grid(vect_prim,list_prim,list_sec,nb_sec_by_dirr,N):
+    points_sec = [[], [], []]
+    for dirr in range(3):
+        for i in range(-nb_sec_by_dirr, nb_sec_by_dirr + 1):
+            if not i == 0:
+                vect = list(vect_prim)
+                vect[dirr] = (
+                    (vect[dirr] + i)
+                    - (N[dirr] * ((vect[dirr] + i) >= (N[dirr] / 2)))
+                    + (N[dirr] * ((vect[dirr] + i) <= (-N[dirr] / 2)))
+                )
+                vect = tuple(vect)
+                loc = -1
+                try:
+                    index = list_prim.index(vect)
+                    loc = 0
+                except:
+                    index = list_sec.index(vect)
+                    loc = 1
+                points_sec[dirr].append((loc, index))
+    return points_sec
+    
 def div_on_incgrid(incgrid, dataset_terms):
     logging.info("INIT Calculation of the divergence")
     list_prim = dataset_terms.grid.coords['listprim']
@@ -62,43 +84,33 @@ def div_on_incgrid(incgrid, dataset_terms):
     nb_sec_by_dirr = dataset_terms.grid.coords['nb_sec_by_dirr']
     N = incgrid.spatial_grid.N
     c = incgrid.spatial_grid.c
+    
     output = {}
-    for k in dataset_terms.quantities.keys():
-        if k.startswith("flux"):
-            output['div_'+k] = np.zeros((len(list_prim)))
-            term = dataset_terms.quantities[k]
-            for ind, vect_prim in enumerate(list_prim):
-                div_point = 0
+    list_flux = []
+    for t in dataset_terms.quantities:
+        if t.startswith("flux"):
+            output["div_" + t] = np.zeros((len(list_prim)))
+            list_flux.append(t)
+
+    for ind, vect_prim in enumerate(list_prim):
+        points_sec = coordinate_sec_in_primsec_grid(vect_prim,list_prim, list_sec, nb_sec_by_dirr,N)
+        for t in list_flux:
+            div_point = 0
+            if len(points_sec[0]) == 0:
+                div_point += np.nan
+            else:
                 for dirr in range(3):
-                    point_sec = []
-                    for i in range(-nb_sec_by_dirr, nb_sec_by_dirr+1):
-                        if not i == 0:
-                            vect = list(vect_prim)
-                            vect[dirr] = (
-                        (vect[dirr] + i)
-                        - (N[dirr] * ((vect[dirr] + i) >= (N[dirr] / 2)))
-                        + (N[dirr] * ((vect[dirr] + i) <= (-N[dirr] / 2)))
+                    values = []
+                    for i in range(len(points_sec[dirr])):
+                        values.append(dataset_terms.quantities[t][points_sec[dirr][i][0]][points_sec[dirr][i][1]][dirr])
+                    div_point += cdiff(
+                        tab = values,
+                        length_case=c[0],
+                        precision=nb_sec_by_dirr * 2,
+                        period=False,
+                        point=True,
                     )
-                            vect = tuple(vect)
-                            loc = -1
-                            try:
-                                index = list_prim.index(vect)
-                                loc = 0
-                            except:
-                                index = list_sec.index(vect)
-                                loc = 1
-                            point_sec.append(term[loc][index][dirr])
-                    if len(point_sec) == 0:
-                        div_point += np.nan
-                    else:
-                        div_point += cdiff(
-                            point_sec,
-                            length_case=c[dirr],
-                            precision=nb_sec_by_dirr * 2,
-                            period=False,
-                            point=True,
-                        )
-            output['div_'+k][ind] = div_point
+            output["div_" + t][ind] = div_point
     logging.info("END Calculation of the divergence")
     return output
 
