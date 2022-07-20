@@ -4,12 +4,15 @@ from .abstract_law import AbstractLaw
 
 class Ss22iGyr(AbstractLaw):
     def __init__(self):
-        self.terms = ["source_dpan"]
+        self.terms = ["flux_dvdvdv","flux_dbdbdv","flux_dvdbdb","source_dpan"]
         pass
     
     def terms_and_coeffs(self,physical_params):
         coeffs = {} 
-        coeffs["source_dpan"] = - 1 / 4
+        coeffs["div_flux_dvdvdv"] = - physical_params["rho_mean"] / 4
+        coeffs["div_flux_dbdbdv"] = - physical_params["rho_mean"] / 4
+        coeffs["div_flux_dvdbdb"] = physical_params["rho_mean"] / 2
+        coeffs["source_dpan"] = physical_params["rho_mean"] / 4
         return self.terms, coeffs
 
     def variables(self) -> List[str]:
@@ -17,3 +20,4 @@ class Ss22iGyr(AbstractLaw):
 
 def load():
     return Ss22iGyr()
+

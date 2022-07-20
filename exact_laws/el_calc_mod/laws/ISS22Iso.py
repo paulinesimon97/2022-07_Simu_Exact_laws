@@ -2,7 +2,7 @@ from typing import List
 
 from .abstract_law import AbstractLaw
 
-class Ss22i(AbstractLaw):
+class Ss22iIso(AbstractLaw):
     def __init__(self):
         self.terms = ["flux_dvdvdv","flux_dbdbdv","flux_dvdbdb"]
         pass
@@ -18,4 +18,4 @@ class Ss22i(AbstractLaw):
         return self.list_variables(self.terms)
 
 def load():
-    return Ss22i()
+    return Ss22iIso()
