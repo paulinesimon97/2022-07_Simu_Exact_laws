@@ -4,7 +4,7 @@ from numba import njit
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 
-class SourceRpisodv(AbstractTerm):
+class SourceRdpisodv(AbstractTerm):
     def __init__(self):
         pass
 
@@ -16,13 +16,13 @@ class SourceRpisodv(AbstractTerm):
 
 
 def load():
-    return SourceRpisodv()
+    return SourceRdpisodv()
 
 
 @njit
 def calc_in_point(i, j, k, ip, jp, kp, rho, piso, divv):
 
     return (
-        rho[i, j, k] * piso[ip, jp, kp] * divv[ip, jp, kp]
-        + rho[ip, jp, kp] * piso[i, j, k] * divv[i, j, k]
+        rho[i, j, k] * (piso[ip, jp, kp] - piso[i, j, k]) * divv[ip, jp, kp]
+        - rho[ip, jp, kp] * (piso[ip, jp, kp] - piso[i, j, k]) * divv[i, j, k]
     )

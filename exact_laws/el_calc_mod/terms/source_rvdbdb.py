@@ -4,7 +4,7 @@ from numba import njit
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 
-class FluxRvdbdb(AbstractTerm):
+class SourceRvdbdb(AbstractTerm):
     def __init__(self):
         pass
 
@@ -16,7 +16,7 @@ class FluxRvdbdb(AbstractTerm):
 
 
 def load():
-    return FluxRvdbdb()
+    return SourceRvdbdb()
 
 
 @njit
