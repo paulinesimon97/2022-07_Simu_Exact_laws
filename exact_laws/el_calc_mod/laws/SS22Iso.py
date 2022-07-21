@@ -43,7 +43,7 @@ class Ss22Iso(AbstractLaw):
         coeffs["source_rduisodv"] = - 1 / 2
         coeffs["source_rdpisodv"] = 1 / 2
         coeffs["source_rvdbdb"] = 1 / 2
-        coeffs["source_rbdvdb",] = 1 / 4
+        coeffs["source_rbdvdb"] = 1 / 4
         coeffs["source_bdrvdb"] = -1 / 4   
         coeffs["source_pmvdrdr"] = -1 / 4   
         coeffs["source_pisovdrdr"] = -1 / 4   

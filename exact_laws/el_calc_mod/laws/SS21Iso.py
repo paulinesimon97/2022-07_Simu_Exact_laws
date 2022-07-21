@@ -42,7 +42,7 @@ class Ss21Iso(AbstractLaw):
         coeffs["source_rduisodv"] = - 1 / 2
         coeffs["source_rpisodv"] = 1 / 2
         coeffs["source_rvdbdb"] = 1 / 2
-        coeffs["source_rbdvdb",] = 1 / 4
+        coeffs["source_rbdvdb"] = 1 / 4
         coeffs["source_bdrvdb"] = -1 / 4
         coeffs["source_rvbetadu"] = 1 / 4       
         return self.terms, coeffs
