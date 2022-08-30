@@ -7,7 +7,7 @@ from .abstract_term import AbstractTerm, calc_source_with_numba
 class SourceDpan(AbstractTerm):
     def __init__(self):
         self.set_sympy_expr()
-        quantities = ("pperp'", "ppar'", "pm'"
+        quantities = ("pperp'", "ppar'", "pm'",
                       "bx'", "by'", "bz'",
                       "dxvx'", "dyvx'", "dzvx'",
                       "dxvy'", "dyvy'", "dzvy'",
@@ -24,7 +24,7 @@ class SourceDpan(AbstractTerm):
         
     def set_sympy_expr(self):
         IpperpP, IpparP, IpmP = sp.symbols(("pperp'", "ppar'", "pm'"))
-        IbxP, IbyP, IbzP = sp.symbols(("vx'", "vy'", "vz'"))
+        IbxP, IbyP, IbzP = sp.symbols(("bx'", "by'", "bz'"))
         dxvxP, dyvxP, dzvxP = sp.symbols(("dxvx'", "dyvx'", "dzvx'"))
         dxvyP, dyvyP, dzvyP = sp.symbols(("dxvy'", "dyvy'", "dzvy'"))
         dxvzP, dyvzP, dzvzP = sp.symbols(("dxvz'", "dyvz'", "dzvz'"))
@@ -101,7 +101,7 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
     return (f(IpperpP, IpparP, IpmP, IbxP, IbyP, IbzP,
             dxvxP, dyvxP, dzvxP, dxvyP, dyvyP, dzvyP, dxvzP, dyvzP, dzvzP,
             dxvxNP, dyvxNP, dzvxNP, dxvyNP, dyvyNP, dzvyNP, dxvzNP, dyvzNP, dzvzNP)
-           + f(IpperpNP, IpparNP, IpmNP, IbxNP, IbyNP, IbzNP,
+           - f(IpperpNP, IpparNP, IpmNP, IbxNP, IbyNP, IbzNP,
             dxvxP, dyvxP, dzvxP, dxvyP, dyvyP, dzvyP, dxvzP, dyvzP, dzvzP,
             dxvxNP, dyvxNP, dzvxNP, dxvyNP, dyvyNP, dzvyNP, dxvzNP, dyvzNP, dzvzNP))
 
