@@ -68,16 +68,28 @@ def from_OCA_files_to_standard_h5_file(
         f"\n\t - reduction: {reduction}"
     )
     logging.info(message)
-
-    output_file = f"{output_folder}/{name}.h5"
-
-    if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."):
-        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
-        return output_file
-
-    g = h5.File(output_file, "w")
-    dic_param = {}
+    
     needed_quantities = list_quantities(laws, terms, quantities)
+    
+    output_file = f"{output_folder}/{name}.h5"
+    if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."): 
+        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
+        #with h5.File(output_file, "a") as g:
+        #    for oqp in g.keys():
+        #        if oqp in needed_quantities: needed_quantities.remove(oqp)
+        #        if oqp in ['vx','vy','vz']: needed_quantities.remove('v')
+        #        if oqp in ['wx','wy','wz']: needed_quantities.remove('w')
+        #        if oqp in ['dxvx','dxvy','dxvz','dyvx','dyvy','dyvz','dzvx','dzvy','dzvz']: 
+        #            needed_quantities.remove('gradv')
+        #        if oqp in ['dxrho','dyrho','dzrho']: needed_quantities.remove('gradrho')
+        #        if oqp in ['Ippar','Ipperp']: needed_quantities.remove('Ipgyr')
+        #        if oqp in ['Ippar','Ipperp']: needed_quantities.remove('Ipgyr')
+        #        if oqp in ['dxuiso','dyuiso','dzuiso']: needed_quantities.remove('graduiso')
+        #        if oqp in ['Ibx','Iby','Ibz']: needed_quantities.remove('Ib')
+        #        if oqp in ['bx','by','bz']: needed_quantities.remove('b')
+        #        if oqp in ['Ijx','Ijy','Ijz']: needed_quantities.remove('Ij')
+        #        if oqp in ['jx','jy','jz']: needed_quantities.remove('j')    
+        return output_file
 
     dic_quant = {}
     # param source file (obtained in velocity source file)
@@ -89,17 +101,22 @@ def from_OCA_files_to_standard_h5_file(
     logging.info(f"... End extracting param")
 
     # velocity source file
-    with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
-        (
-            dic_quant["vx"],
-            dic_quant["vy"],
-            dic_quant["vz"],
-        ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-    accessible_quantities = ["v", "w", "gradv", "divv"]
-    for aq in accessible_quantities:
-        if aq in needed_quantities:
-            QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
-    del (dic_quant["vx"], dic_quant["vy"], dic_quant["vz"])
+    output_file = f"{output_folder}/{name}_v.h5"
+    if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
+        g = h5.File(output_file, "a")
+        with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
+            (
+                dic_quant["vx"],
+                dic_quant["vy"],
+                dic_quant["vz"],
+            ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
+        accessible_quantities = ["v", "w", "gradv", "divv"]
+        for aq in accessible_quantities:
+            if aq in needed_quantities:
+                logging.info(f"... computing {aq} from _v.h5")
+                QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+        del (dic_quant["vx"], dic_quant["vy"], dic_quant["vz"])
+        g.close()
     logging.info(f"... End computing quantities from _v.h5")
 
     # Density source file
@@ -111,36 +128,101 @@ def from_OCA_files_to_standard_h5_file(
             ],
             cycle,
         )
-    accessible_quantities = ["rho", "gradrho"]
-    for aq in accessible_quantities:
-        if aq in needed_quantities:
-            QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+    output_file = f"{output_folder}/{name}_rho.h5"
+    if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
+        g = h5.File(output_file, "a")
+        accessible_quantities = ["rho", "gradrho"]
+        for aq in accessible_quantities:
+            if aq in needed_quantities:
+                logging.info(f"... computing {aq} from _rho.h5")
+                QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+        g.close()
     logging.info(f"... End computing quantities from _rho.h5")
 
     # Pressure source file
-    with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
-        dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(fp, ["pparli", "pperpi"], cycle)
-    accessible_quantities = ["Ipgyr", "pgyr", "ugyr", "piso", "uiso", "graduiso", "ppol", "upol", "gradupol"]
-    for aq in accessible_quantities:
-        if aq in needed_quantities:
-            QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
-    del (dic_quant["ppar"], dic_quant["pperp"])
+    output_file = f"{output_folder}/{name}_p.h5"
+    if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
+        g = h5.File(output_file, "a")
+        with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
+            dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(fp, ["pparli", "pperpi"], cycle)
+        accessible_quantities = ["Ipgyr", "pgyr", "ugyr", "piso", "uiso", "graduiso", "ppol", "upol", "gradupol"]
+        for aq in accessible_quantities:
+            if aq in needed_quantities:
+                logging.info(f"... computing {aq} from _pi.h5")
+                QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+        del (dic_quant["ppar"], dic_quant["pperp"])
+        g.close()
     logging.info(f"... End computing quantities from _pi.h5")
 
     # Magnetic field source file
-    with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
-        (
-            dic_quant["bx"],
-            dic_quant["by"],
-            dic_quant["bz"],
-        ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
-    accessible_quantities = ["Ib", "b", "divb", "Ij", "j", "divj", "Ipm", "pm"]
-    for aq in accessible_quantities:
-        if aq in needed_quantities:
-            QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
-    del dic_quant
+    output_file = f"{output_folder}/{name}_b.h5"
+    if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
+        g = h5.File(output_file, "a")
+        accessible_quantities = ["Ib", "Ipm"]
+        tag = False
+        for k in accessible_quantities:
+            if k in needed_quantities : tag = True
+        if tag:
+            with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
+                (
+                    dic_quant["bx"],
+                    dic_quant["by"],
+                    dic_quant["bz"],
+                ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _b.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del(dic_quant['bx'],dic_quant['by'],dic_quant['bz'])
+        
+        accessible_quantities = ["Ij", "j", "divj"]
+        tag = False
+        for k in accessible_quantities:
+            if k in needed_quantities : tag = True
+        if tag:
+            with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
+                (
+                    dic_quant["bx"],
+                    dic_quant["by"],
+                    dic_quant["bz"],
+                ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+            from .quantities.j import get_original_quantity
+            get_original_quantity(dic_quant, dic_param, delete=True)
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _b.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del(dic_quant['jx'],dic_quant['jy'],dic_quant['jz'])
+        
+        accessible_quantities = ["b", "divb", "pm"]
+        tag = False
+        for k in accessible_quantities:
+            if k in needed_quantities : tag = True
+        if tag:
+            with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
+                (
+                    dic_quant["bx"],
+                    dic_quant["by"],
+                    dic_quant["bz"],
+                ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+            from .quantities.b import get_original_quantity
+            get_original_quantity(dic_quant, dic_param, delete=True)
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _b.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del(dic_quant['vax'],dic_quant['vay'],dic_quant['vaz'])
+        g.close()
     logging.info(f"... End computing quantities from _b.h5")
+    del dic_quant
 
+    output_file = f"{output_folder}/{name}.h5"
+    g = h5.File(output_file, "w")
+    for s in ['v','rho','p','b']:
+        with h5.File(f"{output_folder}/{name}_{s}.h5",'r') as f:
+            for k in f.keys():
+                g.create_dataset(k,data=np.ascontiguousarray(f[k]))
+                
     # Param
     g.create_group("param")
     for key in dic_param.keys():

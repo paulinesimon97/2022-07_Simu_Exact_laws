@@ -2,7 +2,7 @@ import numpy as np
 import numexpr as ne
 
 from ...mathematical_tools import derivation
-from .j import J
+from .j import get_original_quantity
 
 class DivJ:
     def __init__(self, incompressible=False):
@@ -11,7 +11,7 @@ class DivJ:
 
     def create_datasets(self, file, dic_quant, dic_param):
         if not ("jx" in dic_quant.keys() or "jy" in dic_quant.keys() or "jz" in dic_quant.keys()):
-            J.get_original_quantity(dic_quant, dic_param)
+            get_original_quantity(dic_quant, dic_param)
             
         if self.incompressible:
             divj = derivation.div(
