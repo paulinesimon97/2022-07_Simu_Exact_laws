@@ -73,8 +73,9 @@ def from_OCA_files_to_standard_h5_file(
     
     output_file = f"{output_folder}/{name}.h5"
     if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."): 
-        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")
-        #with h5.File(output_file, "a") as g:
+        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n") 
+        #TODO manage case: file already existing
+        #with h5.File(output_file, "a") as g: 
         #    for oqp in g.keys():
         #        if oqp in needed_quantities: needed_quantities.remove(oqp)
         #        if oqp in ['vx','vy','vz']: needed_quantities.remove('v')
@@ -90,7 +91,8 @@ def from_OCA_files_to_standard_h5_file(
         #        if oqp in ['Ijx','Ijy','Ijz']: needed_quantities.remove('Ij')
         #        if oqp in ['jx','jy','jz']: needed_quantities.remove('j')    
         return output_file
-
+    
+    dic_param = {}
     dic_quant = {}
     # param source file (obtained in velocity source file)
     with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
