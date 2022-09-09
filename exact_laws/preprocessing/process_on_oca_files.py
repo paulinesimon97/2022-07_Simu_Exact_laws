@@ -92,7 +92,7 @@ def from_OCA_files_to_standard_h5_file(
         #        if oqp in ['jx','jy','jz']: needed_quantities.remove('j')    
         return output_file
     
-    dic_param = {}
+    dic_param = physical_params
     dic_quant = {}
     # param source file (obtained in velocity source file)
     with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
@@ -238,8 +238,8 @@ def from_OCA_files_to_standard_h5_file(
     g["param"].create_dataset("sim_type", data=sim_type)
     g["param"].create_dataset("reduction", data=reduction)
 
-    for key in physical_params.keys():
-        g["param"].create_dataset(key, data=physical_params[key])
+    #for key in physical_params.keys():
+    #    g["param"].create_dataset(key, data=physical_params[key])
 
     g.close()
     logging.info(f"End process from_OCA_files_to_standard_h5_file()\n")

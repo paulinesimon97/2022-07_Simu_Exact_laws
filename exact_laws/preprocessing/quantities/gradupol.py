@@ -12,10 +12,19 @@ class GradUPol:
         if self.incompressible:
             raise NotImplementedError("")
         
+        if not "gamma" in dic_param.keys():
+            dic_param['gamma'] = 5/3
+            gamma = 5/3
+        else: 
+            gamma = dic_param['gamma']
         cst = (np.mean(ne.evaluate(f"(ppar+pperp+pperp)/3", local_dict=dic_quant))
-                / np.mean(ne.evaluate(f"rho**(5/3)", local_dict=dic_quant)))
+                / np.mean(ne.evaluate(f"rho**(gamma)", local_dict=dic_quant, global_dict=dic_param)))
         rho = dic_quant['rho']
-        upol = ne.evaluate("cst/(5/3-1)*rho**(5/3-1)")
+        if gamma != 1:
+            upol = ne.evaluate("cst/(gamma-1)*rho**(gamma-1)")
+        else: 
+            upol = ne.evaluate("cst*log(rho)")
+            
         dxupol, dyupol, dzupol = derivation.grad(
             upol, 
             dic_param["c"], 
