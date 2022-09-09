@@ -152,8 +152,28 @@ def from_OCA_files_to_standard_h5_file(
             if aq in needed_quantities:
                 logging.info(f"... computing {aq} from _pi.h5")
                 QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+        dic_quant["meanppar"] = np.mean(dic_quant["ppar"])
+        dic_quant["meanpperp"] = np.mean(dic_quant["pperp"])
         del (dic_quant["ppar"], dic_quant["pperp"])
         g.close()
+        
+        accessible_quantities = ["Ipcgl, pcgl", "ucgl"]
+        tag = False
+        for k in accessible_quantities:
+            if k in needed_quantities : tag = True
+        if tag:
+            with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
+                (
+                    dic_quant["bx"],
+                    dic_quant["by"],
+                    dic_quant["bz"],
+                ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _b et _rho.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del(dic_quant['bx'],dic_quant['by'],dic_quant['bz'])
+            
     logging.info(f"... End computing quantities from _pi.h5")
 
     # Magnetic field source file
