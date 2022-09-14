@@ -44,6 +44,10 @@ class FluxDvdvdv(AbstractTerm):
 
     def variables(self) -> List[str]:
         return ['v']
+    
+    def print_expr(self):
+        sp.init_printing(use_latex=True)
+        return self.exprx, self.expry, self.exprz
 
 def load():
     return FluxDvdvdv()

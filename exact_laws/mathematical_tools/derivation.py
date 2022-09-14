@@ -106,7 +106,8 @@ def grad_gen(tab, case_vec=[None], precision=4, period=True):
     if case_vec[0] is None:
         case_vec = np.ones(len(np.shape(tab)), dtype=int)
     for i in range(len(case_vec)):
-        yield cdiff(tab, case_vec[i], i, precision, period)
+        out = cdiff(tab, case_vec[i], i, precision, period)
+        yield out
 
 
 def grad(tab, case_vec=[None], precision=4, period=True):

@@ -112,7 +112,7 @@ def from_OCA_files_to_standard_h5_file(
                 dic_quant["vy"],
                 dic_quant["vz"],
             ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-        accessible_quantities = ["v", "w", "gradv", "divv"]
+        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2"]
         for aq in accessible_quantities:
             if aq in needed_quantities:
                 logging.info(f"... computing {aq} from _v.h5")
@@ -129,7 +129,8 @@ def from_OCA_files_to_standard_h5_file(
                 "rho",
             ],
             cycle,
-        )
+        )[0]
+        
     output_file = f"{output_folder}/{name}_rho.h5"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
@@ -155,9 +156,8 @@ def from_OCA_files_to_standard_h5_file(
         dic_quant["meanppar"] = np.mean(dic_quant["ppar"])
         dic_quant["meanpperp"] = np.mean(dic_quant["pperp"])
         del (dic_quant["ppar"], dic_quant["pperp"])
-        g.close()
         
-        accessible_quantities = ["Ipcgl, pcgl", "ucgl"]
+        accessible_quantities = ["Ipcgl", "pcgl", "ucgl"]
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
@@ -173,7 +173,7 @@ def from_OCA_files_to_standard_h5_file(
                     logging.info(f"... computing {aq} from _b et _rho.h5")
                     QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
             del(dic_quant['bx'],dic_quant['by'],dic_quant['bz'])
-            
+            g.close()
     logging.info(f"... End computing quantities from _pi.h5")
 
     # Magnetic field source file

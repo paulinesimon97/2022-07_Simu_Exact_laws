@@ -26,6 +26,6 @@ def calc_in_point(i, j, k, ip, jp, kp, rho, vx, vy, vz, pm, dxrho, dyrho, dzrho)
     vPgradrhoNP = vx[ip, jp, kp] * dxrho[i, j, k] + vy[ip, jp, kp] * dyrho[i, j, k] + vz[ip, jp, kp] * dzrho[i, j, k]
 
     return (
-        1/rho[i, j, k] * pm[ip, jp, kp] * vNPgradrhoP
-        + 1/rho[ip, jp, kp] * pm[i, j, k] * vPgradrhoNP
+        rho[i, j, k]/rho[ip, jp, kp] * pm[ip, jp, kp] * vNPgradrhoP
+        + rho[ip, jp, kp]/rho[i, j, k] * pm[i, j, k] * vPgradrhoNP
     )

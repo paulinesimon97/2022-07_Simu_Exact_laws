@@ -70,6 +70,10 @@ class SourceDpan(AbstractTerm):
 
     def variables(self) -> List[str]:
         return ["Ipgyr", "Ipm", "gradv", "Ib"]
+    
+    def print_expr(self):
+        sp.init_printing(use_latex=True)
+        return self.expr
 
 
 def load():
