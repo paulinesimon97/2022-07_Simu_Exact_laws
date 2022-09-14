@@ -7,11 +7,9 @@ from .abstract_term import AbstractTerm, calc_flux_with_numba
 class FluxDbdbdv(AbstractTerm):
     def __init__(self):
         self.set_sympy_expr()
-        quantities = ("vx'", "vy'", "vz'",
-                 "vx", "vy", "vz",
-                 "bx'", "by'", "bz'",
-                 "bx", "by", "bz",
-                )
+        quantities = ("vx'", "vy'", "vz'", "vx", "vy", "vz",
+                 "bx'", "by'", "bz'", "bx", "by", "bz")
+        
         self.fctx = sp.lambdify(
             sp.symbols(quantities),
             self.exprx,
@@ -47,18 +45,20 @@ class FluxDbdbdv(AbstractTerm):
         self.exprz = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvz
         
     def calc(self, vector:List[int], cube_size:List[int], vx, vy, vz, Ibx, Iby, Ibz, **kwarg) -> List[float]:
-        #return calc_flux_with_numba(calc_in_point, *vector, *cube_size, vx, vy, vz, Ibx, Iby, Ibz)
         return calc_flux_with_numba(calc_in_point_with_sympy, *vector, *cube_size, vx, vy, vz, Ibx, Iby, Ibz)
 
     def variables(self) -> List[str]:
         return ['Ib','v']
+    
+    def print_expr(self):
+        sp.init_printing(use_latex=True)
+        return self.exprx, self.expry, self.exprz
 
 def load():
     return FluxDbdbdv()
 
 def print_expr():
-    sp.init_printing(use_latex=True)
-    return FluxDbdbdv().exprx, FluxDbdbdv().expry, FluxDbdbdv().exprz
+    return FluxDbdbdv().print_expr()
 
 @njit
 def calc_in_point_with_sympy(i, j, k, ip, jp, kp, 
@@ -70,45 +70,23 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
     
     vxP, vyP, vzP = vx[ip, jp, kp], vy[ip, jp, kp], vz[ip, jp, kp]
     vxNP, vyNP, vzNP = vx[i, j, k], vy[i, j, k], vz[i, j, k]
+    
     IbxP, IbyP, IbzP = Ibx[ip, jp, kp], Iby[ip, jp, kp], Ibz[ip, jp, kp]
     IbxNP, IbyNP, IbzNP = Ibx[i, j, k], Iby[i, j, k], Ibz[i, j, k]
     
     outx = fx(
-        vxP, vyP, vzP, 
-        vxNP, vyNP, vzNP, 
-        IbxP, IbyP, IbzP, 
-        IbxNP, IbyNP, IbzNP
-    )
+        vxP, vyP, vzP, vxNP, vyNP, vzNP, 
+        IbxP, IbyP, IbzP, IbxNP, IbyNP, IbzNP)
+    
     outy = fy(
-        vxP, vyP, vzP, 
-        vxNP, vyNP, vzNP, 
-        IbxP, IbyP, IbzP, 
-        IbxNP, IbyNP, IbzNP
-    )
+        vxP, vyP, vzP, vxNP, vyNP, vzNP, 
+        IbxP, IbyP, IbzP, IbxNP, IbyNP, IbzNP)
+    
     outz = fz(
-        vxP, vyP, vzP, 
-        vxNP, vyNP, vzNP, 
-        IbxP, IbyP, IbzP, 
-        IbxNP, IbyNP, IbzNP
-    )
+        vxP, vyP, vzP, vxNP, vyNP, vzNP, 
+        IbxP, IbyP, IbzP, IbxNP, IbyNP, IbzNP)
     
     return outx, outy, outz
 
-@njit
-def calc_in_point(i, j, k, ip, jp, kp, vx, vy, vz, Ibx, Iby, Ibz):
-    
-    dvx = vx[ip,jp,kp] - vx[i,j,k]
-    dvy = vy[ip,jp,kp] - vy[i,j,k]
-    dvz = vz[ip,jp,kp] - vz[i,j,k]
-    
-    dIbx = Ibx[ip,jp,kp] - Ibx[i,j,k]
-    dIby = Iby[ip,jp,kp] - Iby[i,j,k]
-    dIbz = Ibz[ip,jp,kp] - Ibz[i,j,k]
-    
-    fx = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvx
-    fy = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvy
-    fz = (dIbx * dIbx + dIby * dIby + dIbz * dIbz) * dvz
-    
-    return fx, fy, fz
     
     
