@@ -7,7 +7,7 @@ from .abstract_term import AbstractTerm, calc_flux_with_numba
 class FluxDrbdbdv(AbstractTerm):
     def __init__(self):
         self.set_sympy_expr()
-        quantities = ( "rho'", "rho"
+        quantities = ( "rho'", "rho",
             "vx'", "vy'", "vz'", "vx", "vy", "vz",
             "bx'", "by'", "bz'", "bx", "by", "bz")
         
