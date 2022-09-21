@@ -127,3 +127,10 @@ def bin_arrays_in_h5(filename, output_filename, binning):
                     for kp in keys:
                         f["param"].create_dataset(kp, data=g["param"][kp])
     return 0
+
+def extract_quantities_from_h5_file(file, list_quant):
+    list_data = []
+    with h5.File(file, "r") as f:
+        for quant in list_quant:
+            list_data.append(np.ascontiguousarray(f[f"{quant}"], dtype=np.float64))
+    return list_data

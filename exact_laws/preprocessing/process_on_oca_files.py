@@ -112,7 +112,7 @@ def from_OCA_files_to_standard_h5_file(
                 dic_quant["vy"],
                 dic_quant["vz"],
             ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2"]
+        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2","vnorm"]
         for aq in accessible_quantities:
             if aq in needed_quantities:
                 logging.info(f"... computing {aq} from _v.h5")
@@ -180,7 +180,7 @@ def from_OCA_files_to_standard_h5_file(
     output_file = f"{output_folder}/{name}_b.h5"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
-        accessible_quantities = ["Ib", "Ipm"]
+        accessible_quantities = ["Ib", "Ipm",'Ibnorm']
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
@@ -216,7 +216,7 @@ def from_OCA_files_to_standard_h5_file(
                     QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
             del(dic_quant['jx'],dic_quant['jy'],dic_quant['jz'])
         
-        accessible_quantities = ["b", "divb", "pm"]
+        accessible_quantities = ["b", "divb", "pm", "bnorm"]
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
