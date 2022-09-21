@@ -7,7 +7,7 @@ from .abstract_term import AbstractTerm, calc_source_with_numba
 class SourceBbdrdj(AbstractTerm):
     def __init__(self):
         self.set_sympy_expr()
-        quantities = ("rho'", "rho'",
+        quantities = ("rho'", "rho",
                       "bx'", "by'", "bz'",
                       "bx", "by", "bz",
                       "divj'", "divj"

@@ -6,7 +6,7 @@ from .source_dpan import SourceDpan, calc_in_point_with_sympy
 
 class SourceDpanCgl(SourceDpan):
     def __init__(self):
-        SourceDpan.__init(self)
+        SourceDpan.__init__(self)
         
     def calc(self, vector: List[int], cube_size: List[int],
              Ipperpcgl, Ipparcgl, Ipm,
