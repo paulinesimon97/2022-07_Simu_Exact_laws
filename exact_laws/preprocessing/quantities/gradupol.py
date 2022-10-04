@@ -17,9 +17,13 @@ class GradUPol:
             gamma = 5/3
         else: 
             gamma = dic_param['gamma']
-        cst = (np.mean(ne.evaluate(f"(ppar+pperp+pperp)/3", local_dict=dic_quant))
-                / np.mean(ne.evaluate(f"rho**(gamma)", local_dict=dic_quant, global_dict=dic_param)))
+        if "cst" in dic_param.keys():
+            cst = dic_param['cst']
+        else: 
+            cst = (np.mean(ne.evaluate(f"(ppar+pperp+pperp)/3", local_dict=dic_quant))
+                    / np.mean(ne.evaluate(f"rho**(gamma)", local_dict=dic_quant, global_dict=dic_param)))
         rho = dic_quant['rho']
+        
         if gamma != 1:
             upol = ne.evaluate("cst/(gamma-1)*rho**(gamma-1)")
         else: 
