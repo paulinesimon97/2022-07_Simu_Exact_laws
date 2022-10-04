@@ -197,7 +197,7 @@ def from_OCA_files_to_standard_h5_file(
                     QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
             del(dic_quant['bx'],dic_quant['by'],dic_quant['bz'])
         
-        accessible_quantities = ["Ij", "j", "divj"]
+        accessible_quantities = ["Ij"]
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
@@ -215,6 +215,25 @@ def from_OCA_files_to_standard_h5_file(
                     logging.info(f"... computing {aq} from _b.h5")
                     QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
             del(dic_quant['jx'],dic_quant['jy'],dic_quant['jz'])
+            
+        accessible_quantities = ["j", "divj"]
+        tag = False
+        for k in accessible_quantities:
+            if k in needed_quantities : tag = True
+        if tag:
+            with h5.File(f"{input_folder}/3Dfields_b.h5", "r") as fb:
+                (
+                    dic_quant["bx"],
+                    dic_quant["by"],
+                    dic_quant["bz"],
+                ) = extract_quantities_from_OCA_file(fb, ["bx", "by", "bz"], cycle)
+            from .quantities.j import get_original_quantity
+            get_original_quantity(dic_quant, dic_param, delete=True, inc=False)
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _b.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del(dic_quant['jcx'],dic_quant['jcy'],dic_quant['jcz'])
         
         accessible_quantities = ["b", "divb", "pm", "bnorm"]
         tag = False

@@ -3,7 +3,7 @@ import numexpr as ne
 
 from ...mathematical_tools import derivation
 
-def get_original_quantity(dic_quant, dic_param, delete=False):
+def get_original_quantity(dic_quant, dic_param, delete=False, inc=True):
     dic_quant['jx'], dic_quant['jy'], dic_quant['jz'] = derivation.rot(
         [dic_quant["bx"], dic_quant["by"], dic_quant["bz"]],
         dic_param["c"],
@@ -12,6 +12,14 @@ def get_original_quantity(dic_quant, dic_param, delete=False):
     )
     if delete: 
         del(dic_quant[f'bx'],dic_quant[f'by'],dic_quant[f'bz'])
+    
+    if not inc:
+        dic_quant['jcx'] = dic_quant['jx']/dic_quant['rho']
+        del(dic_quant['jx'])
+        dic_quant['jcy'] = dic_quant['jy']/dic_quant['rho']
+        del(dic_quant['jy'])
+        dic_quant['jcz'] = dic_quant['jz']/dic_quant['rho']
+        del(dic_quant['jz'])
 
 class J:
     def __init__(self, incompressible=False):
@@ -19,10 +27,10 @@ class J:
         self.incompressible = incompressible
 
     def create_datasets(self, file, dic_quant, dic_param):
-        if not ("jx" in dic_quant.keys() or "jy" in dic_quant.keys() or "jz" in dic_quant.keys()):
-            get_original_quantity(dic_quant, dic_param)
             
         if self.incompressible:
+            if not ("jx" in dic_quant.keys() or "jy" in dic_quant.keys() or "jz" in dic_quant.keys()):
+                get_original_quantity(dic_quant, dic_param)
             for axis in ('x', 'y', 'z'):
                 ds_name = f"{self.name}{axis}"
                 file.create_dataset(
@@ -32,11 +40,13 @@ class J:
                     dtype = np.float64,
                 )
         else:
+            if not ("jcx" in dic_quant.keys() or "jcy" in dic_quant.keys() or "jcz" in dic_quant.keys()):
+                get_original_quantity(dic_quant, dic_param, inc=False)
             for axis in ('x', 'y', 'z'):
                 ds_name = f"{self.name}{axis}"
                 file.create_dataset(
                     ds_name,
-                    data = ne.evaluate(f"{ds_name}/rho", local_dict=dic_quant),
+                    data = dic_quant[f'jc{axis}'],
                     shape = dic_param["N"],
                     dtype = np.float64,
                 )
