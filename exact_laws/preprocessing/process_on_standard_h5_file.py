@@ -128,6 +128,67 @@ def bin_arrays_in_h5(filename, output_filename, binning):
                         f["param"].create_dataset(kp, data=g["param"][kp])
     return 0
 
+def data_truncation(file_process, trunc):
+    """
+    Vérification si le fichier contenant les données réduite existe déjà.
+    Si non, enclenche le processus de création.
+    Puis affiche le contenu du nouveau fichier.
+    """
+    output_filename = f"{file_process[:-3]}_trunc{str(trunc)}.h5"
+    message = (f"Begin process data_truncation() with config:"
+               f"\n\t - input_file: {file_process}"
+               f"\n\t - output_file: {output_filename}"
+               f"\n\t - reduction: {trunc}"
+               )
+    logging.info(message)
+    
+    
+    if verif_file_existence(output_filename, "Data truncation impossible."):
+        logging.info(f"End process data_truncation()\n")
+        return output_filename
+    else:
+        trunc_arrays_in_h5(file_process, output_filename, trunc)
+        
+    logging.info(f"End process data_truncation()\n")
+    
+    return output_filename
+
+
+def trunc_an_array(tab, trunc):
+    """
+    Input: tab(np.array à réduire), trunc(int,facteur de réduction)
+    Output: np.array réduit
+    """
+    return tab[:(np.shape(tab)[0] // trunc),:(np.shape(tab)[1] // trunc),:(np.shape(tab)[2] // trunc)]
+
+
+def trunc_arrays_in_h5(filename, output_filename, trunc):
+    """
+    Input: file_name(str, name+ext of the original file), trunc(int, binning factor)
+    Apply a binning on the data contained in the .h5 file named "file_name".
+    Record the new dataset.
+    Output: name of the new file.
+    """
+    with h5.File(filename, "r") as g:
+        with h5.File(output_filename, "w") as f:
+            for k in g.keys():
+                if not "param" in k:
+                    tab = np.ascontiguousarray(g[k], dtype=np.float64)
+                    new_tab = trunc_an_array(tab, trunc)
+                    f.create_dataset(k, data=new_tab)
+                else:
+                    f.create_group("param")
+                    f["param"]["N"] = np.array(g["param"]["N"]) // trunc
+                    f["param"]["L"] = np.array(g["param"]["L"]) / trunc
+                    f["param"]["reduction"] = trunc
+                    keys = list(g["param"].keys())
+                    keys.remove("N")
+                    keys.remove("L")
+                    keys.remove("reduction")
+                    for kp in keys:
+                        f["param"].create_dataset(kp, data=g["param"][kp])
+    return 0
+
 def extract_quantities_from_h5_file(file, list_quant):
     list_data = []
     with h5.File(file, "r") as f:

@@ -322,5 +322,11 @@ def reformat_oca_files(config_file):
     process_on_standard_h5_file.check_file(file_process)
     
     if config["OUTPUT_DATA"]["reduction"] != "1":
-        file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+        if "reduction_type" in config["OUTPUT_DATA"].keys():
+            if "trunc" in config["OUTPUT_DATA"]["reduction_type"]:
+                file_process = process_on_standard_h5_file.data_truncation(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+            else:
+                file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+        else:
+            file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
         process_on_standard_h5_file.check_file(file_process)
