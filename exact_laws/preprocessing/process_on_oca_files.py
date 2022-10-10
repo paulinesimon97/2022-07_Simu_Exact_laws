@@ -296,7 +296,8 @@ def reformat_oca_files(config_file):
         [OUTPUT_DATA]
         path = ./
         name = OCA_CGL2_cycle0_completeInc
-        reduction = 2
+        reduction_type = "trunc" ou "bin"
+        reduction = 2 ou [2,2,4] ou [[0,0,0],[127,296,127]]
         laws = ['SS22I', 'BG17']
         terms = ['flux_dvdvdv']
         quantities = ['Iv']
@@ -320,13 +321,14 @@ def reformat_oca_files(config_file):
         physical_params={k: float(eval((config["PHYSICAL_PARAMS"][k]))) for k in config["PHYSICAL_PARAMS"].keys()},
     )
     process_on_standard_h5_file.check_file(file_process)
+
     
     if config["OUTPUT_DATA"]["reduction"] != "1":
         if "reduction_type" in config["OUTPUT_DATA"].keys():
-            if "trunc" in config["OUTPUT_DATA"]["reduction_type"]:
-                file_process = process_on_standard_h5_file.data_truncation(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+            if "reduction_name" in config["OUTPUT_DATA"].keys():
+                file_process = process_on_standard_h5_file.data_reduction(file_process, eval(config["OUTPUT_DATA"]["reduction"]), config["OUTPUT_DATA"]["reduction_type"], config["OUTPUT_DATA"]["reduction_name"])
             else:
-                file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+                file_process = process_on_standard_h5_file.data_reduction(file_process, eval(config["OUTPUT_DATA"]["reduction"]), config["OUTPUT_DATA"]["reduction_type"])
         else:
-            file_process = process_on_standard_h5_file.data_binning(file_process, int(config["OUTPUT_DATA"]["reduction"]))
+            file_process = process_on_standard_h5_file.data_binning(file_process, eval(config["OUTPUT_DATA"]["reduction"]))
         process_on_standard_h5_file.check_file(file_process)

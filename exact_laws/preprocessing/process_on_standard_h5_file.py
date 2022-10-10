@@ -128,38 +128,38 @@ def bin_arrays_in_h5(filename, output_filename, binning):
                         f["param"].create_dataset(kp, data=g["param"][kp])
     return 0
 
-def data_truncation(file_process, trunc):
+def data_reduction(file_process, reduction_param, reduction_type, reduction_name="red"):
     """
     Vérification si le fichier contenant les données réduite existe déjà.
     Si non, enclenche le processus de création.
     Puis affiche le contenu du nouveau fichier.
-    """
-    output_filename = f"{file_process[:-3]}_trunc{str(trunc)}.h5"
+    """ 
+    output_filename = f"{file_process[:-3]}_{reduction_name}.h5"
     message = (f"Begin process data_truncation() with config:"
                f"\n\t - input_file: {file_process}"
                f"\n\t - output_file: {output_filename}"
-               f"\n\t - reduction: {trunc}"
+               f"\n\t - reduction: {reduction_type} {reduction_param}"
                )
     logging.info(message)
     
-    
-    if verif_file_existence(output_filename, "Data truncation impossible."):
-        logging.info(f"End process data_truncation()\n")
+    if verif_file_existence(output_filename, "Data reduction impossible."):
+        logging.info(f"End process data_reduction()\n")
         return output_filename
     else:
-        trunc_arrays_in_h5(file_process, output_filename, trunc)
-        
-    logging.info(f"End process data_truncation()\n")
+        if reduction_type == 'trunc':
+            trunc_arrays_in_h5(file_process, output_filename, reduction_param)
+        else: 
+            bin_arrays_in_h5(file_process, output_filename, reduction_param)
+    logging.info(f"End process data_reduction()\n")
     
     return output_filename
-
 
 def trunc_an_array(tab, trunc):
     """
     Input: tab(np.array à réduire), trunc(int,facteur de réduction)
     Output: np.array réduit
     """
-    return tab[:(np.shape(tab)[0] // trunc),:(np.shape(tab)[1] // trunc),:(np.shape(tab)[2] // trunc)]
+    return tab[trunc[0][0]:trunc[1][0],trunc[0][1]:trunc[1][1],trunc[0][2]:trunc[1][2]]
 
 
 def trunc_arrays_in_h5(filename, output_filename, trunc):
@@ -172,14 +172,27 @@ def trunc_arrays_in_h5(filename, output_filename, trunc):
     with h5.File(filename, "r") as g:
         with h5.File(output_filename, "w") as f:
             for k in g.keys():
+                tronc = [[],[]]
+                i = 0
+                for n in np.array(g["param"]["N"]):
+                    if type(trunc) == 'int':
+                        tronc[0].append(0)
+                        tronc[1].append(n//trunc)
+                    elif len(np.shape(trunc)) == 1:
+                        tronc[0].append(0)
+                        tronc[1].append(n//trunc[i])
+                    elif len(np.shape(trunc)) == 2:
+                        tronc[0].append(trunc[0][i])
+                        tronc[1].append(trunc[1][i])
+                    i += 1
                 if not "param" in k:
                     tab = np.ascontiguousarray(g[k], dtype=np.float64)
                     new_tab = trunc_an_array(tab, trunc)
                     f.create_dataset(k, data=new_tab)
                 else:
                     f.create_group("param")
-                    f["param"]["N"] = np.array(g["param"]["N"]) // trunc
-                    f["param"]["L"] = np.array(g["param"]["L"]) / trunc
+                    f["param"]["N"] = np.array([t[1]-t[0] for t in len(tronc[0])])
+                    f["param"]["L"] = np.array([(t[1]-t[0])*g["param"]["c"][t] for t in len(tronc[0])])
                     f["param"]["reduction"] = trunc
                     keys = list(g["param"].keys())
                     keys.remove("N")
