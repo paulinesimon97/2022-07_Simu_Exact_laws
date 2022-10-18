@@ -44,7 +44,6 @@ class SourceBbdrdj(AbstractTerm):
         sp.init_printing(use_latex=True)
         return self.expr
 
-
 def load():
     return SourceBbdrdj()
 

@@ -1,17 +1,17 @@
 from typing import List
 from numba import njit
+import sympy as sp
+from .abstract_term import calc_source_with_numba
+from .source_panvdrdr import SourcePanvdrdr, calc_in_point_with_sympy
 
-from .abstract_term import AbstractTerm, calc_source_with_numba
-
-
-class SourcePancglvdrdr(AbstractTerm):
+class SourcePancglvdrdr(SourcePanvdrdr):
     def __init__(self):
-        pass
+        SourcePanvdrdr.__init__(self)
 
     def calc(
         self, vector: List[int], cube_size: List[int], rho, vx, vy, vz, pperpcgl, pparcgl, pm, bx, by, bz, dxrho, dyrho, dzrho, **kwarg
     ) -> List[float]:
-        return calc_source_with_numba(calc_in_point, *vector, *cube_size, rho, vx, vy, vz, pperpcgl, pparcgl, pm, bx, by, bz, dxrho, dyrho, dzrho)
+        return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, vx, vy, vz, pperpcgl, pparcgl, pm, bx, by, bz, dxrho, dyrho, dzrho)
 
     def variables(self) -> List[str]:
         return ["rho", "gradrho", "v", "pcgl", "pm", "b"]
@@ -20,35 +20,6 @@ class SourcePancglvdrdr(AbstractTerm):
 def load():
     return SourcePancglvdrdr()
 
-
-@njit
-def calc_in_point(i, j, k, ip, jp, kp, rho, vx, vy, vz, pperpcgl, pparcgl, pm, bx, by, bz, dxrho, dyrho, dzrho):
-
-    pressP = (pparcgl[ip, jp, kp] - pperpcgl[ip, jp, kp]) / pm[ip, jp, kp]
-    pressNP = (pparcgl[i, j, k] - pperpcgl[i, j, k]) / pm[i, j, k]
-
-    vpNPgradrhoP = (
-        vx[i, j, k] * bx[i, j, k] * bx[i, j, k] * dxrho[ip, jp, kp]
-        + vy[i, j, k] * bx[i, j, k] * by[i, j, k] * dxrho[ip, jp, kp]
-        + vz[i, j, k] * bx[i, j, k] * bz[i, j, k] * dxrho[ip, jp, kp]
-        + vx[i, j, k] * bx[i, j, k] * by[i, j, k] * dyrho[ip, jp, kp]
-        + vy[i, j, k] * by[i, j, k] * by[i, j, k] * dyrho[ip, jp, kp]
-        + vz[i, j, k] * by[i, j, k] * bz[i, j, k] * dyrho[ip, jp, kp]
-        + vx[i, j, k] * bx[i, j, k] * bz[i, j, k] * dzrho[ip, jp, kp]
-        + vy[i, j, k] * by[i, j, k] * bz[i, j, k] * dzrho[ip, jp, kp]
-        + vz[i, j, k] * bz[i, j, k] * bz[i, j, k] * dzrho[ip, jp, kp]
-    )
-    vpPgradrhoNP = (
-        vx[ip, jp, kp] * bx[ip, jp, kp] * bx[ip, jp, kp] * dxrho[i, j, k]
-        + vy[ip, jp, kp] * bx[ip, jp, kp] * by[ip, jp, kp] * dxrho[i, j, k]
-        + vz[ip, jp, kp] * bx[ip, jp, kp] * bz[ip, jp, kp] * dxrho[i, j, k]
-        + vx[ip, jp, kp] * bx[ip, jp, kp] * by[ip, jp, kp] * dyrho[i, j, k]
-        + vy[ip, jp, kp] * by[ip, jp, kp] * by[ip, jp, kp] * dyrho[i, j, k]
-        + vz[ip, jp, kp] * by[ip, jp, kp] * bz[ip, jp, kp] * dyrho[i, j, k]
-        + vx[ip, jp, kp] * bx[ip, jp, kp] * bz[ip, jp, kp] * dzrho[i, j, k]
-        + vy[ip, jp, kp] * by[ip, jp, kp] * bz[ip, jp, kp] * dzrho[i, j, k]
-        + vz[ip, jp, kp] * bz[ip, jp, kp] * bz[ip, jp, kp] * dzrho[i, j, k]
-    )
-    drho = rho[ip, jp, kp] - rho[i, j, k]
-
-    return drho * pressNP * vpNPgradrhoP / rho[ip, jp, kp] - drho * pressP * vpPgradrhoNP / rho[i, j, k]
+def print_expr():
+    sp.init_printing(use_latex=True)
+    return SourcePancglvdrdr().expr

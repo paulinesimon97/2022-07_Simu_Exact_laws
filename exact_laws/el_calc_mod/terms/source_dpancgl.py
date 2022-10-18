@@ -15,12 +15,6 @@ class SourceDpanCgl(SourceDpan):
              dxvy, dyvy, dzvy,
              dxvz, dyvz, dzvz,
              **kwarg) -> (float):
-        #return calc_source_with_numba(calc_in_point, *vector, *cube_size,
-                                    #   Ipperp, Ippar, Ipm,
-                                    #   Ibx, Iby, Ibz,
-                                    #   dxvx, dyvx, dzvx,
-                                    #   dxvy, dyvy, dzvy,
-                                    #   dxvz, dyvz, dzvz)
         return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size,
                                       Ipperpcgl, Ipparcgl, Ipm,
                                       Ibx, Iby, Ibz,
