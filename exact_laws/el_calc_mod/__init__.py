@@ -77,12 +77,12 @@ def calc_terms(dataset, output_dataset, run_config, save, backup_setp=5000):
         state_index = output_dataset.params['state']['index']
         vectors = [(index, vector) for index, vector in enumerate(output_dataset.grid.coords['listprim']) if
                    (index >= state_index) and ((index % run_config.size) == run_config.rank)]
-        backup_ind = 0
+        backup_ind = state_index
         for index, vector in vectors:
             if backup_ind == 0: 
                 logging.info(f'BEG {backup_ind+1}/{len(vectors)} of listprim attributed to proc {run_config.rank}')
             for term in terms:
-                output_quantities[term][0][state_index + index] = TERMS[term].calc(vector, Ndat,
+                output_quantities[term][0][index] = TERMS[term].calc(vector, Ndat,
                                                                                    **dataset.quantities)
             if backup_ind % backup_setp == 0: 
                 logging.info(f'... END {backup_ind+1}/{len(vectors)} of listprim attributed to proc {run_config.rank}')
@@ -97,12 +97,12 @@ def calc_terms(dataset, output_dataset, run_config, save, backup_setp=5000):
         state_index = output_dataset.params['state']['index']
         vectors = [(index, vector) for index, vector in enumerate(output_dataset.grid.coords['listsec']) if
                    (index >= state_index) and ((index % run_config.size) == run_config.rank)]
-        backup_ind = 0
+        backup_ind = state_index
         for index, vector in vectors:
             if backup_ind == 0: 
-                logging.info(f'BEG {backup_ind+1}/{len(vectors)} of listprim attributed to proc {run_config.rank}')
+                logging.info(f'BEG {backup_ind+1}/{len(vectors)} of listsec attributed to proc {run_config.rank}')
             for term in terms_flux:
-                output_quantities[term][1][state_index + index] = TERMS[term].calc(vector, Ndat,
+                output_quantities[term][1][index] = TERMS[term].calc(vector, Ndat,
                                                                                    **dataset.quantities)
             if backup_ind % backup_setp == 0: 
                 logging.info(f'... END {backup_ind+1}/{len(vectors)} of listsec attributed to proc {run_config.rank}')
