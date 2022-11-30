@@ -20,22 +20,25 @@ def check_file(filename):
 def recursive_describ_of_h5file(file, path='/'):
     message = ''
     for k in file[path].keys():
-        splitted_key = str(file[path + '/' + k]).split()
-        if splitted_key[1] == 'group':
-            message += f"\n\t - {k}:"
-            message += recursive_describ_of_h5file(file, path + '/' + k).replace('\n\t', '\n\t\t')
-        else:
-            tab = np.array(file[path + '/' + k])
-            size = len(np.shape(tab))
-            if size <= 1:
-                message += f"\n\t - {k}: {tab}"
-            else : 
-                message += f"\n\t - {k}: {np.nanmean(tab):.5} $\pm$ {np.nanstd(tab):.5}"
+        if not k == 'param':
+            splitted_key = str(file[path + '/' + k]).split()
+            if splitted_key[1] == 'group':
+                message += f"\n\t - {k}:"
+                message += recursive_describ_of_h5file(file, path + '/' + k).replace('\n\t', '\n\t\t')
+            else:
+                tab = np.array(file[path + '/' + k])
+                size = len(np.shape(tab))
+                if size <= 1:
+                    message += f"\n\t - {k}: {tab}"
+                else : 
+                    message += f"\n\t - {k}: {np.nanmean(tab):.5} $\pm$ {np.nanstd(tab):.5}"
     return message
     
 def describ_file(filename):
     message = f"... file {filename} contains:"
     with h5.File(filename, 'r') as f:
+            message += f"\n\t - param:"
+            message += recursive_describ_of_h5file(f,path='/param').replace('\n\t', '\n\t\t')
             message += recursive_describ_of_h5file(f)
     return message
 
