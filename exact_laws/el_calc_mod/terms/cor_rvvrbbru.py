@@ -28,7 +28,7 @@ class CorRvvrbbru(AbstractTerm):
         psvv = vxP*vxNP + vyP*vyNP + vzP*vzNP
         psbb = bxP*bxNP + byP*byNP + bzP*bzNP
 
-        self.expr = (rhoP+rhoNP)*psvv/2 + (rhoP+rhoNP)*psbb/2 + (rhoP*uNP+rhoNP*uP)/2  
+        self.expr = (rhoP+rhoNP)*psvv/4 + (rhoP+rhoNP)*psbb/4 + (rhoP*uNP+rhoNP*uP)/2  
 
     def calc(
         self, vector: List[int], cube_size: List[int], rho, vx, vy, vz, bx, by, bz, ugyr, **kwarg
