@@ -189,12 +189,13 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     logging.info(message)
 
     # Init Original_dataset
-    if backup.already:
-        original_dataset = backup.download('data_origin')
-    else:
-        original_dataset, laws, terms = initialise_original_dataset(input_filename)
-        if run_config.rank == 0:
-            backup.save(original_dataset, 'data_origin')
+    #if backup.already:
+    #    original_dataset = backup.download('data_origin')
+    #else:
+    #    original_dataset, laws, terms = initialise_original_dataset(input_filename)
+    #    if run_config.rank == 0:
+    #        backup.save(original_dataset, 'data_origin')
+    original_dataset, laws, terms = initialise_original_dataset(input_filename)
     original_dataset.check('original_dataset')
 
     # Init Incremental_grid
