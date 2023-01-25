@@ -14,3 +14,4 @@ quantities = ['Iv']
 
 [PHYSICAL_PARAMS]
 di = 1
+eta = 1e-7
