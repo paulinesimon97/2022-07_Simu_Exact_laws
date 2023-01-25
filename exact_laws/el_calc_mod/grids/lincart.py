@@ -25,7 +25,7 @@ def div(incgrid, dataset_terms):
     c = incgrid.spatial_grid.c
     output = {}
     for t in dataset_terms.quantities:
-        if t.startswith("flux") and dataset_terms.quantities[t] != 'Done' and len(dataset_terms.quantities[t]) != 0:
+        if t.startswith("flux") :
             output["div_" + t] = mtdiv(dataset_terms.quantities[t],c)
     return output
 

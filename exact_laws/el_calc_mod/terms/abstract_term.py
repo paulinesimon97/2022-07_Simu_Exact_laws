@@ -8,6 +8,9 @@ class AbstractTerm:
 
     def calc(self, *args, **kwargs) -> (float or List[float]):
         raise NotImplementedError("You have to reimplement this method")
+    
+    def calc_fourier(self, *args, **kwargs) -> (float or List[float]):
+        raise NotImplementedError("You have to reimplement this method")
 
     def variables(self) -> List[str]:
         raise NotImplementedError("You have to reimplement this method")

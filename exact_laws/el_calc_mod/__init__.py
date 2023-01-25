@@ -1,6 +1,7 @@
 import logging
 import configparser
 import importlib
+import os
 
 from .datasets import load_from_standard_file
 from .grids import load_incgrid_from_grid
@@ -56,7 +57,7 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
         f"Begin calc exact law with config:"
         f"\n\t - input_file: {input_filename}"
         f"\n\t - output_file: {output_filename}"
-        f"\n\t - method: {method}"
+        f"\n\t - method: {method} on {os.cpu_count()} cpu"
     )
     logging.info(message)
     
