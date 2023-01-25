@@ -1,5 +1,4 @@
 import numpy as np
-import numexpr as ne
 import h5py as h5
 import logging
 import configparser
@@ -73,7 +72,7 @@ def from_OCA_files_to_standard_h5_file(
     
     output_file = f"{output_folder}/{name}.h5"
     if process_on_standard_h5_file.verif_file_existence(output_file, "Process impossible."): 
-        logging.info(f"End process from_OCA_files_to_standard_h5_file()\n") 
+        logging.info("End process from_OCA_files_to_standard_h5_file()\n") 
         #TODO manage case: file already existing
         #with h5.File(output_file, "a") as g: 
         #    for oqp in g.keys():
@@ -100,26 +99,25 @@ def from_OCA_files_to_standard_h5_file(
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "3Dgrid")
         else:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "Simulation_Parameters")
-    logging.info(f"... End extracting param")
+    logging.info("... End extracting param")
 
     # velocity source file
     output_file = f"{output_folder}/{name}_v.h5"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
         with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
-            (
-                dic_quant["vx"],
+            (dic_quant["vx"],
                 dic_quant["vy"],
                 dic_quant["vz"],
             ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2","vnorm"]
+        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2","vnorm","hdk"]
         for aq in accessible_quantities:
             if aq in needed_quantities:
                 logging.info(f"... computing {aq} from _v.h5")
                 QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
         del (dic_quant["vx"], dic_quant["vy"], dic_quant["vz"])
         g.close()
-    logging.info(f"... End computing quantities from _v.h5")
+    logging.info("... End computing quantities from _v.h5")
 
     # Density source file
     with h5.File(f"{input_folder}/3Dfields_rho.h5", "r") as frho:
@@ -140,7 +138,7 @@ def from_OCA_files_to_standard_h5_file(
                 logging.info(f"... computing {aq} from _rho.h5")
                 QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
         g.close()
-    logging.info(f"... End computing quantities from _rho.h5")
+    logging.info("... End computing quantities from _rho.h5")
 
     # Pressure source file
     output_file = f"{output_folder}/{name}_p.h5"
@@ -180,7 +178,7 @@ def from_OCA_files_to_standard_h5_file(
     output_file = f"{output_folder}/{name}_b.h5"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
-        accessible_quantities = ["Ib", "Ipm",'Ibnorm']
+        accessible_quantities = ["Ib", "Ipm",'Ibnorm','Ihdm']
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
@@ -235,7 +233,7 @@ def from_OCA_files_to_standard_h5_file(
                     QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
             del(dic_quant['jcx'],dic_quant['jcy'],dic_quant['jcz'])
         
-        accessible_quantities = ["b", "divb", "pm", "bnorm"]
+        accessible_quantities = ["b", "divb", "pm", "bnorm","hdm"]
         tag = False
         for k in accessible_quantities:
             if k in needed_quantities : tag = True
@@ -255,14 +253,36 @@ def from_OCA_files_to_standard_h5_file(
             del(dic_quant['vax'],dic_quant['vay'],dic_quant['vaz'])
         g.close()
     logging.info(f"... End computing quantities from _b.h5")
+    
+    # forcing source file
+    import os
+    if os.path.isfile(f"{input_folder}/3Dfields_forcl_ampl.h5"):
+        output_file = f"{output_folder}/{name}_f.h5"
+        if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
+            g = h5.File(output_file, "a")
+            with h5.File(f"{input_folder}/3Dfields_forcl_ampl.h5", "r") as fv:
+                (dic_quant["fp"],
+                    dic_quant["fm"],
+                ) = extract_quantities_from_OCA_file(fv, ["forcl_ampl_plus", "forcl_ampl_mins"], cycle)
+            accessible_quantities = ["f",]
+            for aq in accessible_quantities:
+                if aq in needed_quantities:
+                    logging.info(f"... computing {aq} from _forcl_ampl.h5")
+                    QUANTITIES[aq].create_datasets(g, dic_quant, dic_param)
+            del (dic_quant["fp"],dic_quant["fm"])
+            g.close()
+        logging.info("... End computing quantities from _forcl_ampl.h5")
+    else :
+        logging.error("No file 3Dfields_forcl_ampl.h5, impossible to compute f.")
     del dic_quant
 
     output_file = f"{output_folder}/{name}.h5"
     g = h5.File(output_file, "w")
-    for s in ['v','rho','p','b']:
-        with h5.File(f"{output_folder}/{name}_{s}.h5",'r') as f:
-            for k in f.keys():
-                g.create_dataset(k,data=np.ascontiguousarray(f[k]))
+    for s in ['v','rho','p','b','f']:
+        if os.path.isfile(f"{output_folder}/{name}_{s}.h5"):
+            with h5.File(f"{output_folder}/{name}_{s}.h5",'r') as f:
+                for k in f.keys():
+                    g.create_dataset(k,data=np.ascontiguousarray(f[k]))
                 
     # Param
     g.create_group("param")
@@ -304,6 +324,10 @@ def reformat_oca_files(config_file):
 
         [PHYSICAL_PARAMS]
         di = 1
+        eta = 0
+        nu = 0
+        an_hd = 0
+        a1_forc = 0.5
     """
     config = configparser.ConfigParser()
     config.read(config_file)

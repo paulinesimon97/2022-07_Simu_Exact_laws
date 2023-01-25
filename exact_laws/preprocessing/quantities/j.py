@@ -1,5 +1,4 @@
 import numpy as np
-import numexpr as ne
 
 from ...mathematical_tools import derivation
 
@@ -11,7 +10,7 @@ def get_original_quantity(dic_quant, dic_param, delete=False, inc=True):
         period = True,
     )
     if delete: 
-        del(dic_quant[f'bx'],dic_quant[f'by'],dic_quant[f'bz'])
+        del(dic_quant['bx'],dic_quant['by'],dic_quant['bz'])
     
     if not inc:
         dic_quant['jcx'] = dic_quant['jx']/dic_quant['rho']
