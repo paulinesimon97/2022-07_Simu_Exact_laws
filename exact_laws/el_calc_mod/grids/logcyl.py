@@ -2,7 +2,8 @@ import numpy as np
 import random
 
 from .incgrid import IncGrid
-
+from .grid import Grid
+from ...mathematical_tools.derivation import cdiff
 
 def logregular_axis(size, maxi):
     axis = np.unique(np.logspace(0, np.log10(maxi), size, endpoint=True, dtype=int))
@@ -71,7 +72,8 @@ def build_logregular_cylindrical_incremental_grid(original_grid, Nmax_scale, Nma
         N=np.array([N_par, N_perp, np.max(grid["count"])], dtype=int),
         axis=axis,
         coords=grid,
-        kind=kind,
+        kind= kind,
+        coord = 'logcyl',
     )
 
 
@@ -107,8 +109,76 @@ def build_listcoords(incgrid, nb_sec_by_dirr=1, **kargs):
     list_sec = list(set(list_sec))
     return list_prim, list_sec, nb_sec_by_dirr
 
+def load_outputgrid(incgrid, nb_sec_by_dirr=1):
+    """
+    Args:
+        incgrid (IncGrid object)
+        nb_sec_by_dirr (int) : 0, 1, 2 
+    Returns:
+        Grid object that contains list of coordinates
+    """
+    coords = {}
+    coords['listprim'], coords['listsec'], coords['nb_sec_by_dirr'] = build_listcoords(incgrid, nb_sec_by_dirr)    
+    return Grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
 
-def reorganise_quantities(incgrid, output_grid, output_quantities, nb_sec_by_dirr=1):
+def coordinate_sec_in_primsec_grid(vect_prim,list_prim,list_sec,nb_sec_by_dirr,N):
+    points_sec = [[], [], []]
+    for dirr in range(3):
+        for i in range(-nb_sec_by_dirr, nb_sec_by_dirr + 1):
+            if not i == 0:
+                vect = list(vect_prim)
+                vect[dirr] = (
+                    (vect[dirr] + i)
+                    - (N[dirr] * ((vect[dirr] + i) >= (N[dirr] / 2)))
+                    + (N[dirr] * ((vect[dirr] + i) <= (-N[dirr] / 2)))
+                )
+                vect = tuple(vect)
+                loc = -1
+                try:
+                    index = list_prim.index(vect)
+                    loc = 0
+                except:
+                    index = list_sec.index(vect)
+                    loc = 1
+                points_sec[dirr].append((loc, index))
+    return points_sec
+
+def div(incgrid, dataset_terms):
+    list_prim = dataset_terms.grid.coords['listprim']
+    list_sec = dataset_terms.grid.coords['listsec']
+    nb_sec_by_dirr = dataset_terms.grid.coords['nb_sec_by_dirr']
+    N = incgrid.spatial_grid.N
+    c = incgrid.spatial_grid.c
+    
+    output = {}
+    list_flux = []
+    for t in dataset_terms.quantities:
+        if t.startswith("flux"):
+            output["div_" + t] = np.zeros((len(list_prim)))
+            list_flux.append(t)
+
+    for ind, vect_prim in enumerate(list_prim):
+        points_sec = coordinate_sec_in_primsec_grid(vect_prim,list_prim, list_sec, nb_sec_by_dirr,N)
+        for t in list_flux:
+            div_point = 0
+            if len(points_sec[0]) == 0:
+                div_point += np.nan
+            else:
+                for dirr in range(3):
+                    values = []
+                    for i in range(len(points_sec[dirr])):
+                        values.append(dataset_terms.quantities[t][points_sec[dirr][i][0]][points_sec[dirr][i][1]][dirr])
+                    div_point += cdiff(
+                        tab = values,
+                        length_case=c[dirr],
+                        precision=nb_sec_by_dirr * 2,
+                        period=False,
+                        point=True,
+                    )
+            output["div_" + t][ind] = div_point
+    return output
+
+def reorganise_quantities(output_quantities, incgrid, output_grid,  nb_sec_by_dirr=1):
     output = {}
     N = incgrid.spatial_grid.N
     shape_scalar = incgrid.N

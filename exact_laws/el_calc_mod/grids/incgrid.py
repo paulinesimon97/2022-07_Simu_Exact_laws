@@ -4,12 +4,12 @@ import logging
 class IncGrid():
     """Classe contenant les informations nécessaires sur la grille finale (grille d'échelles)"""
 
-    def __init__(self, original_grid, N, axis, coords, kind):
+    def __init__(self, original_grid, N, axis, coords, kind, coord):
         self.spatial_grid = original_grid
         self.axis = axis
         self.N = N 
         self.coords = coords
-        self.kind = 'logcyl_'+kind
+        self.kind = coord+'_'+kind
     
     def describ(self):
         tmp = self.spatial_grid.describ().replace('\t','\t\t')

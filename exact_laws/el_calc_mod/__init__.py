@@ -3,7 +3,7 @@ import numpy as np
 import configparser
 
 from .datasets import load_from_standard_file, load, record_incdataset_to_h5file
-from .grids import load_incgrid_from_grid, load_listgrid_from_incgrid, div_on_incgrid, reorganise_quantities, reformat_grid_compatible_to_h5
+from .grids import load_incgrid_from_grid, load_outputgrid_from_incgrid, div_on_incgrid, reorganise_quantities, reformat_grid_compatible_to_h5
 from .terms import TERMS
 from .laws import LAWS
 from ..preprocessing import process_on_standard_h5_file
@@ -22,7 +22,11 @@ def initialise_output_dataset(incremental_grid, original_dataset, laws, terms):
     params['laws'] = laws
     params['terms'], params['coeffs'] = list_terms_and_coeffs(laws, terms, original_dataset.params)
     params['state'] = {'index': 0, 'list': 'prim'}
-    grid = grid_prim_and_sec(params['terms'], incremental_grid)
+    nb_sec_by_dirr = 0
+    for term in params['terms']:
+        if term.startswith('flux'):
+            nb_sec_by_dirr = 1
+    grid = load_outputgrid_from_incgrid(coord=incremental_grid.kind.split('_')[0], incgrid=incremental_grid, nb_sec_by_dirr=nb_sec_by_dirr)
     quantities = init_ouput_quantities(grid.coords['listprim'], grid.coords['listsec'], params['terms'])
     output_dataset = load(quantities=quantities, grid=grid, params=params)
     logging.info(f"END Initialisation output data ")
@@ -36,16 +40,6 @@ def list_terms_and_coeffs(laws, terms, physical_params):
         terms_for_law, coeffs[law] = LAWS[law].terms_and_coeffs(physical_params)
         list_terms += terms_for_law
     return list(set(list_terms)), coeffs
-
-
-def grid_prim_and_sec(terms, incremental_grid):
-    nb_sec_by_dirr = 0
-    for term in terms:
-        if term.startswith('flux'):
-            nb_sec_by_dirr = 1
-    return load_listgrid_from_incgrid(coord=incremental_grid.kind.split('_')[0],
-                                      incgrid=incremental_grid,
-                                      nb_sec_by_dirr=nb_sec_by_dirr)
 
 
 def init_ouput_quantities(listprim, listsec, terms):
@@ -226,7 +220,7 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     backup.save(output_dataset, 'data_output', rank=f"{run_config.rank}")
     
     # ## DIVERGENCE
-    div_quantities = div_on_incgrid(incremental_grid, output_dataset)
+    div_quantities = div_on_incgrid(incremental_grid, output_dataset, **input_grid)
     for k in div_quantities.keys():
         output_dataset.quantities[k] = [div_quantities[k]]
     backup.save(output_dataset, 'data_output', rank=f"{run_config.rank}")
