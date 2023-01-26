@@ -38,7 +38,7 @@ def calc_term(dataset, output_dataset):
 
     terms = output_dataset.params['terms']
     output_quantities = output_dataset.quantities
-    ind_term = output_dataset.params['state']['nb_terms']
+    ind_term = output_dataset.params['state']['nb_term_done']
 
     logging.info(f"INIT Calculation of term {terms[ind_term]}")
     output_quantities[terms[ind_term]] = TERMS[terms[ind_term]].calc_fourier(**dataset.quantities)
@@ -64,6 +64,9 @@ def save_output_dataset_on_incgrid(output_filename, output_dataset, incremental_
                 if key not in f.keys():
                     f.create_dataset(key, data=incgrid_quantities[key])
                 del(output_dataset.quantities[key])
+            del(f['params']['state']['nb_term_done'],f['params']['state']['nb_term_rec'])
+            f['params']['state'].create_dataset('nb_term_done', data=output_dataset.params['state']['nb_term_done'])
+            f['params']['state'].create_dataset('nb_term_rec', data=output_dataset.params['state']['nb_term_rec'] +1)
     else : 
         logging.info(f"INIT Record params and grid in {output_filename} ")
         incgrid_h5 = reformat_grid_compatible_to_h5(coord=coord, incgrid= incremental_grid)
@@ -87,15 +90,20 @@ def apply_method(original_dataset, incremental_grid, coord, laws, terms, output_
         save_output_dataset_on_incgrid(output_filename, output_dataset, incremental_grid, original_dataset, coord)
     
     output_dataset.params['state']['nb_term_rec'] = output_dataset.params['state']['nb_term_done']
+    
+    logging.info("INIT creat temporary .h5 file")
     if run_config.rank == 0:
         shutil.copy2(output_filename,output_filename+'temp')
-
+    logging.info("END creat temporary .h5 file")
+    
     # ## CALCUL LOI EXACTE
-    while output_dataset.params['state']['nb_term_rec'] != output_dataset.params['state']['nb_term'] :
+    while output_dataset.params['state']['nb_term_rec'] != output_dataset.params['state']['nb_terms'] :
         if output_dataset.params['state']['nb_term_rec']%5 == 0 :
+            logging.info("INIT update .h5 file and backup")
             if run_config.rank == 0:
                 shutil.copy2(output_filename+'temp',output_filename)
                 backup.save(output_dataset, 'data_output', rank=f"{run_config.rank}")
+            logging.info("END update .h5 file and backup")
     
         calc_term(
             dataset=original_dataset,
@@ -113,6 +121,11 @@ def apply_method(original_dataset, incremental_grid, coord, laws, terms, output_
             save_output_dataset_on_incgrid(output_filename+'temp', output_dataset, incremental_grid, original_dataset, coord)
         
         output_dataset.params['state']['nb_term_rec'] += 1
+    
+    logging.info("INIT final update .h5 file")
+    if run_config.rank == 0:
+        shutil.copy2(output_filename+'temp',output_filename)
+    logging.info("END final update .h5 file")
         
         
         

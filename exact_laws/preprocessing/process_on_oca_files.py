@@ -102,7 +102,7 @@ def from_OCA_files_to_standard_h5_file(
     logging.info("... End extracting param")
 
     # velocity source file
-    output_file = f"{output_folder}/{name}_v.h5"
+    output_file = f"{output_folder}/{name}_v.h5temp"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
         with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
@@ -129,7 +129,7 @@ def from_OCA_files_to_standard_h5_file(
             cycle,
         )[0]
         
-    output_file = f"{output_folder}/{name}_rho.h5"
+    output_file = f"{output_folder}/{name}_rho.h5temp"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
         accessible_quantities = ["rho", "gradrho"]
@@ -141,7 +141,7 @@ def from_OCA_files_to_standard_h5_file(
     logging.info("... End computing quantities from _rho.h5")
 
     # Pressure source file
-    output_file = f"{output_folder}/{name}_p.h5"
+    output_file = f"{output_folder}/{name}_p.h5temp"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
         with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
@@ -175,7 +175,7 @@ def from_OCA_files_to_standard_h5_file(
     logging.info(f"... End computing quantities from _pi.h5")
 
     # Magnetic field source file
-    output_file = f"{output_folder}/{name}_b.h5"
+    output_file = f"{output_folder}/{name}_b.h5temp"
     if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
         g = h5.File(output_file, "a")
         accessible_quantities = ["Ib", "Ipm",'Ibnorm','Ihdm']
@@ -257,7 +257,7 @@ def from_OCA_files_to_standard_h5_file(
     # forcing source file
     import os
     if os.path.isfile(f"{input_folder}/3Dfields_forcl_ampl.h5"):
-        output_file = f"{output_folder}/{name}_f.h5"
+        output_file = f"{output_folder}/{name}_f.h5temp"
         if not process_on_standard_h5_file.verif_file_existence(output_file, ""):
             g = h5.File(output_file, "a")
             with h5.File(f"{input_folder}/3Dfields_forcl_ampl.h5", "r") as fv:
@@ -279,8 +279,8 @@ def from_OCA_files_to_standard_h5_file(
     output_file = f"{output_folder}/{name}.h5"
     g = h5.File(output_file, "w")
     for s in ['v','rho','p','b','f']:
-        if os.path.isfile(f"{output_folder}/{name}_{s}.h5"):
-            with h5.File(f"{output_folder}/{name}_{s}.h5",'r') as f:
+        if os.path.isfile(f"{output_folder}/{name}_{s}.h5temp"):
+            with h5.File(f"{output_folder}/{name}_{s}.h5temp",'r') as f:
                 for k in f.keys():
                     g.create_dataset(k,data=np.ascontiguousarray(f[k]))
                 

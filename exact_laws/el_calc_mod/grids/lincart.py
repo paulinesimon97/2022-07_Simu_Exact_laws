@@ -17,7 +17,7 @@ def load_outputgrid(incgrid, *args):
     Returns:
         Grid object that contains list of coordinates
     """   
-    grid = incgrid.original_grid
+    grid = incgrid.spatial_grid
     grid.axis = ['lx','ly','lz']
     return grid
 
@@ -36,7 +36,7 @@ def reorganise_quantities(output_quantities, incgrid, *args):
 
     list_flux = [k for k in output_quantities if k.startswith("flux")]
     for t in list_flux:
-        output[t] = [np.roll(output_quantities[t][i],(int(N[0]/2),int(N[1]/2)),axis=(0,1))[:,:,:N[2]] for i in len(output_quantities[t])]
+        output[t] = [np.roll(output_quantities[t][i],(int(N[0]/2),int(N[1]/2)),axis=(0,1))[:,:,:N[2]] for i in range(len(output_quantities[t]))]
 
     list_other = [k for k in output_quantities if not k.startswith("flux")]
     for t in list_other:
