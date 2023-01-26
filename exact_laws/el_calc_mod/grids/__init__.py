@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from .grid import Grid
-from ...mathematical_tools.derivation import cdiff
+
 
 def load_grid(N=[], L=[], c=[], axis=[], coords={}):
     if len(N) == 0 and len(L) == 0 and len(c) == 0 and len(coords.keys()) == 0: 
@@ -41,7 +41,7 @@ def load_incgrid_from_grid(coord, **kargs):
     mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
     return mod.load(**kargs)
 
-def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
+def load_outputgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr=1):
     """
     Args:
         coord (str): nom du module (type de grille)
@@ -51,72 +51,18 @@ def load_listgrid_from_incgrid(coord, incgrid, nb_sec_by_dirr):
         Grid object that contains list of coordinates
     """
     mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
-    coords = {}
-    coords['listprim'], coords['listsec'], coords['nb_sec_by_dirr'] = mod.build_listcoords(incgrid, nb_sec_by_dirr)    
-    return load_grid(axis=['listprim','listsec'], N=[len(coords['listprim']),len(coords['listsec'])], coords=coords)
-
-def coordinate_sec_in_primsec_grid(vect_prim,list_prim,list_sec,nb_sec_by_dirr,N):
-    points_sec = [[], [], []]
-    for dirr in range(3):
-        for i in range(-nb_sec_by_dirr, nb_sec_by_dirr + 1):
-            if not i == 0:
-                vect = list(vect_prim)
-                vect[dirr] = (
-                    (vect[dirr] + i)
-                    - (N[dirr] * ((vect[dirr] + i) >= (N[dirr] / 2)))
-                    + (N[dirr] * ((vect[dirr] + i) <= (-N[dirr] / 2)))
-                )
-                vect = tuple(vect)
-                loc = -1
-                try:
-                    index = list_prim.index(vect)
-                    loc = 0
-                except:
-                    index = list_sec.index(vect)
-                    loc = 1
-                points_sec[dirr].append((loc, index))
-    return points_sec
+    return mod.load_outputgrid( incgrid,  nb_sec_by_dirr)
     
-def div_on_incgrid(incgrid, dataset_terms):
+def div_on_incgrid(coord, incgrid, dataset_terms):
     logging.info("INIT Calculation of the divergence")
-    list_prim = dataset_terms.grid.coords['listprim']
-    list_sec = dataset_terms.grid.coords['listsec']
-    nb_sec_by_dirr = dataset_terms.grid.coords['nb_sec_by_dirr']
-    N = incgrid.spatial_grid.N
-    c = incgrid.spatial_grid.c
-    
-    output = {}
-    list_flux = []
-    for t in dataset_terms.quantities:
-        if t.startswith("flux"):
-            output["div_" + t] = np.zeros((len(list_prim)))
-            list_flux.append(t)
-
-    for ind, vect_prim in enumerate(list_prim):
-        points_sec = coordinate_sec_in_primsec_grid(vect_prim,list_prim, list_sec, nb_sec_by_dirr,N)
-        for t in list_flux:
-            div_point = 0
-            if len(points_sec[0]) == 0:
-                div_point += np.nan
-            else:
-                for dirr in range(3):
-                    values = []
-                    for i in range(len(points_sec[dirr])):
-                        values.append(dataset_terms.quantities[t][points_sec[dirr][i][0]][points_sec[dirr][i][1]][dirr])
-                    div_point += cdiff(
-                        tab = values,
-                        length_case=c[dirr],
-                        precision=nb_sec_by_dirr * 2,
-                        period=False,
-                        point=True,
-                    )
-            output["div_" + t][ind] = div_point
+    mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
+    output = mod.div(incgrid, dataset_terms)
     logging.info("END Calculation of the divergence")
     return output
 
 def reorganise_quantities(coord, incgrid, output_grid, output_quantities, nb_sec_by_dirr=1):
     mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")
-    return mod.reorganise_quantities(incgrid, output_grid, output_quantities, nb_sec_by_dirr)
+    return mod.reorganise_quantities(output_quantities, incgrid, output_grid,  nb_sec_by_dirr)
 
 def reformat_grid_compatible_to_h5(coord, incgrid):
     mod = importlib.import_module(f"exact_laws.el_calc_mod.grids.{coord}", "*")

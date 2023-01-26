@@ -20,7 +20,7 @@ def check_file(filename):
 def recursive_describ_of_h5file(file, path='/'):
     message = ''
     for k in file[path].keys():
-        if not k == 'param':
+        if not 'param' in k :
             splitted_key = str(file[path + '/' + k]).split()
             if splitted_key[1] == 'group':
                 message += f"\n\t - {k}:"
@@ -37,9 +37,13 @@ def recursive_describ_of_h5file(file, path='/'):
 def describ_file(filename):
     message = f"... file {filename} contains:"
     with h5.File(filename, 'r') as f:
-            message += f"\n\t - param:"
-            message += recursive_describ_of_h5file(f,path='/param').replace('\n\t', '\n\t\t')
-            message += recursive_describ_of_h5file(f)
+        k = ""
+        for key in f.keys():
+            if "param" in key : k = key
+        
+        message += f"\n\t - {k}:"
+        message += recursive_describ_of_h5file(f,path='/'+k).replace('\n\t', '\n\t\t')
+        message += recursive_describ_of_h5file(f)
     return message
 
 def recursive_copy_of_file(file_to_copy, output_file, path='/', input_to_record={}):
