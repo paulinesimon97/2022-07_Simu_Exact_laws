@@ -6,8 +6,8 @@ def get_original_quantity(dic_quant, dic_param, delete=False):
         dic_quant[f'va{axis}'] = ne.evaluate(f"b{axis}/sqrt(rho)", local_dict=dic_quant)
         if delete: 
             del(dic_quant[f'b{axis}'])
-    if delete: 
-        del(dic_quant['rho'])
+    #if delete: 
+    #    del(dic_quant['rho'])
 
 class B:
     def __init__(self, incompressible=False):
