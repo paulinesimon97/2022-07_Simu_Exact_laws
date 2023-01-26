@@ -1,8 +1,9 @@
-
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 class ForcV(AbstractTerm):
@@ -30,6 +31,9 @@ class ForcV(AbstractTerm):
         ) -> List[float]:
         return calc_source_with_numba(
             calc_in_point_with_sympy, *vector, *cube_size, rho, vx, vy, vz, fx, fy, fz)
+    
+    def calc_fourier(self, rho, vx, vy, vz, fx, fy, fz, **kwarg) -> List:
+        return calc_with_fourier(rho, vx, vy, vz, fx, fy, fz)
 
     def variables(self) -> List[str]:
         return ["f", "v", "rho"]
@@ -65,3 +69,23 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
         vxP, vyP, vzP, vxNP, vyNP, vzNP,
         fxP, fyP, fzP, fxNP, fyNP, fzNP
     )
+
+def calc_with_fourier(rho, vx, vy, vz, fx, fy, fz):
+    fvx = ft.fft(vx)
+    fvy = ft.fft(vy)
+    fvz = ft.fft(vz)
+    frhovx = ft.fft(rho*vx)
+    frhovy = ft.fft(rho*vy)
+    frhovz = ft.fft(rho*vz)
+    
+    ffx = ft.fft(fx)
+    ffy = ft.fft(fy)
+    ffz = ft.fft(fz)
+    frhofx = ft.fft(rho*fx)
+    frhofy = ft.fft(rho*fy)
+    frhofz = ft.fft(rho*fz)
+    
+    return ft.ifft(frhofx*np.conj(fvx) + frhofy*np.conj(fvy) + frhofz*np.conj(fvz)
+                   + frhovx*np.conj(ffx) + frhovy*np.conj(ffy) + frhovz*np.conj(ffz)
+                   + np.conj(frhofx)*fvx + np.conj(frhofy)*fvy + np.conj(frhofz)*fvz
+                   + np.conj(frhovx)*ffx + np.conj(frhovy)*ffy + np.conj(frhovz)*ffz)

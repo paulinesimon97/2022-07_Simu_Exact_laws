@@ -1,7 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 class CorRbb(AbstractTerm):
@@ -30,6 +32,9 @@ class CorRbb(AbstractTerm):
         return calc_source_with_numba(
             calc_in_point_with_sympy, *vector, *cube_size, rho, bx, by, bz)
 
+    def calc_fourier(self, rho, bx, by, bz, **kwarg) -> List:
+        return calc_with_fourier(rho, bx, by, bz)
+        
     def variables(self) -> List[str]:
         return ["b", "rho"]
     
@@ -61,3 +66,14 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
         bxP, byP, bzP, bxNP, byNP, bzNP
     )
 
+def calc_with_fourier(rho, bx, by, bz) -> List:
+
+    fbx = ft.fft(bx)
+    fby = ft.fft(by)
+    fbz = ft.fft(bz)
+    frhobx = ft.fft(rho*bx)
+    frhoby = ft.fft(rho*by)
+    frhobz = ft.fft(rho*bz)
+    
+    return ft.ifft(frhobx*np.conj(fbx) + frhoby*np.conj(fby) + frhobz*np.conj(fbz)
+                    + np.conj(frhobx)*fbx + np.conj(frhoby)*fby + np.conj(frhobz)*fbz)/4

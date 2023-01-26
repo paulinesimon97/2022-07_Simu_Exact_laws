@@ -1,7 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 class CorRu(AbstractTerm):
@@ -27,6 +29,9 @@ class CorRu(AbstractTerm):
         return calc_source_with_numba(
             calc_in_point_with_sympy, *vector, *cube_size, rho,  ugyr)
 
+    def calc_fourier(self, rho, ugyr, **kwarg) -> List:
+        return calc_with_fourier(rho, ugyr)
+    
     def variables(self) -> List[str]:
         return [ "rho", "ugyr"]
     
@@ -56,3 +61,10 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
     return f(rhoP, rhoNP,
         uP, uNP
     )
+    
+def calc_with_fourier(rho, ugyr):
+
+    frho = ft.fft(rho)
+    fu = ft.fft(ugyr)
+    
+    return ft.ifft(frho*np.conj(fu)+np.conj(frho)*fu)/2

@@ -1,7 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 class Bg17Vbj(AbstractTerm):
@@ -42,7 +44,10 @@ class Bg17Vbj(AbstractTerm):
     ) -> List[float]:
         return calc_source_with_numba(
             calc_in_point_with_sympy, *vector, *cube_size, vx, vy, vz, Ibx, Iby, Ibz, Ijx, Ijy, Ijz)
-        
+    
+    def calc_fourier(self, vx, vy, vz, Ibx, Iby, Ibz, Ijx, Ijy, Ijz, **kwarg) -> List:
+        return calc_with_fourier(vx, vy, vz, Ibx, Iby, Ibz, Ijx, Ijy, Ijz)
+    
     def variables(self) -> List[str]:
         return ['Ij','Ib','v']
     
@@ -77,3 +82,21 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
         IbxP, IbyP, IbzP, IbxNP, IbyNP, IbzNP, 
         IjxP, IjyP, IjzP, IjxNP, IjyNP, IjzNP
     )
+    
+def calc_with_fourier(vx, vy, vz, Ibx, Iby, Ibz, Ijx, Ijy, Ijz):
+    fjx = ft.fft(Ijx)
+    fjy = ft.fft(Ijy)
+    fjz = ft.fft(Ijz)
+    
+    vXbx = vy * Ibz - vz * Iby
+    vXby = vz * Ibx - vx * Ibz
+    vXbz = vx * Iby - vy * Ibx
+    
+    fvXbx = ft.fft(vXbx)
+    fvXby = ft.fft(vXby)
+    fvXbz = ft.fft(vXbz)
+    
+    fourier_part = - ft.ifft(fvXbx*np.conj(fjx) + np.conj(fvXbx)*fjx + fvXby*np.conj(fjy) + np.conj(fvXby)*fjy + fvXbz*np.conj(fjz) + np.conj(fvXbz)*fjz)
+    mean_part = 2*np.mean(vXbx*Ijx+vXby*Ijy+vXbz*Ijz)
+    
+    return mean_part + fourier_part

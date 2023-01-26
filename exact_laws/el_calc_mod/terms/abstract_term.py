@@ -15,7 +15,6 @@ class AbstractTerm:
     def variables(self) -> List[str]:
         raise NotImplementedError("You have to reimplement this method")
 
-
 def load():
     return AbstractTerm()
 

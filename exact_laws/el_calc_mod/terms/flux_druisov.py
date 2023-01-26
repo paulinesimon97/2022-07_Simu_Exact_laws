@@ -1,7 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_flux_with_numba
 
 class FluxDruisov(AbstractTerm):
@@ -41,6 +43,9 @@ class FluxDruisov(AbstractTerm):
     
     def calc(self, vector:List[int], cube_size:List[int], rho, uiso, vx, vy, vz, **kwarg) -> List[float]:
         return calc_flux_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, uiso, vx, vy, vz)
+    
+    def calc_fourier(self, rho, uiso, vx, vy, vz, **kwarg) -> List:
+        return calc_with_fourier(rho, uiso, vx, vy, vz)
 
     def variables(self) -> List[str]:
         return ['rho','uiso', 'v']
@@ -82,3 +87,16 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp, rho, uiso, vx, vy, vz,
     
     return outx, outy, outz
     
+def calc_with_fourier(rho, uiso, vx, vy, vz):
+    fu = ft.fft(uiso) 
+    
+    frvx = ft.fft(rho*vx)
+    flux_x = ft.ifft(np.conj(fu)*frvx - fu*np.conj(frvx))
+
+    frvy = ft.fft(rho*vy)
+    flux_y = ft.ifft(np.conj(fu)*frvy - fu*np.conj(frvy))
+ 
+    frvz = ft.fft(rho*vz)
+    flux_z = ft.ifft(np.conj(fu)*frvz - fu*np.conj(frvz))
+    
+    return [flux_x,flux_y,flux_z]   

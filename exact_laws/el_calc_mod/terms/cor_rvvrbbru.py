@@ -3,6 +3,9 @@ from numba import njit
 import sympy as sp
 
 from .abstract_term import AbstractTerm, calc_source_with_numba
+from .cor_rvv import calc_with_fourier as rvv_calc_with_fourier
+from .cor_rbb import calc_with_fourier as rbb_calc_with_fourier
+from .cor_ru import calc_with_fourier as ru_calc_with_fourier
 
 class CorRvvrbbru(AbstractTerm):
     def __init__(self):
@@ -36,6 +39,9 @@ class CorRvvrbbru(AbstractTerm):
         return calc_source_with_numba(
             calc_in_point_with_sympy, *vector, *cube_size, rho, vx, vy, vz, bx, by, bz, ugyr)
 
+    def calc_fourier(self, rho, vx, vy, vz, bx, by, bz, ugyr, **kwarg) -> List:
+        return calc_with_fourier(rho, vx, vy, vz, bx, by, bz, ugyr)
+    
     def variables(self) -> List[str]:
         return ["v", "b", "rho", "ugyr"]
     
@@ -74,3 +80,6 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
         bxP, byP, bzP, bxNP, byNP, bzNP, 
         uP, uNP
     )
+
+def calc_with_fourier(rho, vx, vy, vz, bx, by, bz, ugyr):
+    return rvv_calc_with_fourier(rho, vx, vy, vz) + rbb_calc_with_fourier(rho, bx, by, bz,) + ru_calc_with_fourier(rho, ugyr)
