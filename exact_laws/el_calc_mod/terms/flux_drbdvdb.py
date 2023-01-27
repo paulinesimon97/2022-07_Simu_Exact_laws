@@ -128,7 +128,7 @@ def calc_with_fourier(rho, vx, vy, vz, bx, by, bz):
                         - (np.conj(frbx)*fvxbx+np.conj(frby)*fvybx+np.conj(frbz)*fvzbx)
                         + (fvx*np.conj(frbxbx)+fvy*np.conj(frbybx)+fvz*np.conj(frbzbx))
                         - (np.conj(fvx)*frbxbx+np.conj(fvy)*frbybx+np.conj(fvz)*frbzbx))
-    del(fvxbx,fvybx,fvzbx,fvx,frbxbx)
+    del(fvxbx,fvybx,fvzbx,fbx,frbxbx)
     
     fby = ft.fft(by)
     fvxby = ft.fft(vx*by)
@@ -141,7 +141,7 @@ def calc_with_fourier(rho, vx, vy, vz, bx, by, bz):
                         - (np.conj(frbx)*fvxby+np.conj(frby)*fvyby+np.conj(frbz)*fvzby)
                         + (fvx*np.conj(frbybx)+fvy*np.conj(frbyby)+fvz*np.conj(frbzby))
                         - (np.conj(fvx)*frbybx+np.conj(fvy)*frbyby+np.conj(fvz)*frbzby))
-    del(fvxby,fvyby,fvzby,fvy,frbyby,frbybx)
+    del(fvxby,fvyby,fvzby,fby,frbyby,frbybx)
     
     fbz = ft.fft(bz)
     fvxbz = ft.fft(vx*bz)

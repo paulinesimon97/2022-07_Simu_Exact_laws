@@ -14,7 +14,7 @@ class SourceRvdpandr(AbstractTerm):
                       "pperp'", "ppar'", "pm'",
                       "pperp", "ppar", "pm",
                       "vx", "vy", "vz",
-                      "bx'", "by'", "bz'"
+                      "bx'", "by'", "bz'",
                       "bx", "by", "bz",
                       "dxrho'", "dyrho'", "dzrho'"
                 )
@@ -52,10 +52,9 @@ class SourceRvdpandr(AbstractTerm):
             + vzNP * dpyz * dyrhoP
             + vxNP * dpxz * dzrhoP
             + vyNP * dpyz * dzrhoP
-            + vzNP * dpzz * dzrhoP
-        )
+            + vzNP * dpzz * dzrhoP)
         
-        self.expr = rhoNP * dualprod / rhoP 
+        self.expr = rhoNP / rhoP * dualprod  
 
     def calc(self, vector: List[int], cube_size: List[int],
         rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho, dzrho, **kwarg) -> List[float]:
