@@ -1,15 +1,18 @@
 from typing import List
-from numba import njit
+import sympy as sp
+from .abstract_term import calc_source_with_numba
+from .source_rdpisodv import SourceRdpisodv, calc_in_point_with_sympy, calc_with_fourier
 
-from .abstract_term import AbstractTerm, calc_source_with_numba
 
-
-class SourceRdpperpdv(AbstractTerm):
+class SourceRdpperpdv(SourceRdpisodv):
     def __init__(self):
-        pass
+        SourceRdpisodv.__init__(self)
 
     def calc(self, vector: List[int], cube_size: List[int], rho, pperp, divv, **kwarg) -> List[float]:
-        return calc_source_with_numba(calc_in_point, *vector, *cube_size, rho, pperp, divv)
+        return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, pperp, divv)
+
+    def calc_fourier(self, rho, pperp, divv, **kwarg) -> List:
+        return calc_with_fourier(rho, pperp, divv)
 
     def variables(self) -> List[str]:
         return ["rho", "pgyr", "divv"]
@@ -18,11 +21,6 @@ class SourceRdpperpdv(AbstractTerm):
 def load():
     return SourceRdpperpdv()
 
-
-@njit
-def calc_in_point(i, j, k, ip, jp, kp, rho, pperp, divv):
-
-    return (
-        rho[i, j, k] * (pperp[ip, jp, kp] - pperp[i, j, k]) * divv[ip, jp, kp]
-        - rho[ip, jp, kp] * (pperp[ip, jp, kp] - pperp[i, j, k]) * divv[i, j, k]
-    )
+def print_expr():
+    sp.init_printing(use_latex=True)
+    return SourceRdpperpdv().expr

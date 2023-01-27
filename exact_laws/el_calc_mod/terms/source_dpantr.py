@@ -7,7 +7,7 @@ from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 
-class SourceDpan(AbstractTerm):
+class SourceDpantr(AbstractTerm):
     def __init__(self):
         self.set_sympy_expr()
         quantities = ("pperp'", "ppar'", "pm'",
@@ -45,11 +45,13 @@ class SourceDpan(AbstractTerm):
         ddyvz = dyvzP - dyvzNP
         ddzvz = dzvzP - dzvzNP
 
-        pressP = (IpparP - IpperpP) / IpmP
+        pressP = (IpparP - IpperpP) / (2*IpmP)
+        corpressP = (IpperpP - IpparP)/3
 
-        self.expr = pressP * (IbxP * (IbxP * ddxvx + IbyP * ddxvy + IbzP * ddxvz) + IbyP * (
-                IbxP * ddyvx + IbyP * ddyvy + IbzP * ddyvz) + IbzP * (
-                                IbxP * ddzvx + IbyP * ddzvy + IbzP * ddzvz)) 
+        self.expr = (pressP * (IbxP * (IbxP * ddxvx + IbyP * ddxvy + IbzP * ddxvz) 
+                              + IbyP * (IbxP * ddyvx + IbyP * ddyvy + IbzP * ddyvz) 
+                              + IbzP * (IbxP * ddzvx + IbyP * ddzvy + IbzP * ddzvz))
+                     + corpressP * (ddxvx + ddyvy + ddzvz))
         
     def calc(self, vector: List[int], cube_size: List[int],
              Ipperp, Ippar, Ipm,
@@ -58,12 +60,6 @@ class SourceDpan(AbstractTerm):
              dxvy, dyvy, dzvy,
              dxvz, dyvz, dzvz,
              **kwarg) -> (float):
-        #return calc_source_with_numba(calc_in_point, *vector, *cube_size,
-                                    #   Ipperp, Ippar, Ipm,
-                                    #   Ibx, Iby, Ibz,
-                                    #   dxvx, dyvx, dzvx,
-                                    #   dxvy, dyvy, dzvy,
-                                    #   dxvz, dyvz, dzvz)
         return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size,
                                       Ipperp, Ippar, Ipm,
                                       Ibx, Iby, Ibz,
@@ -91,11 +87,11 @@ class SourceDpan(AbstractTerm):
 
 
 def load():
-    return SourceDpan()
+    return SourceDpantr()
 
 def print_expr():
     sp.init_printing(use_latex=True)
-    return SourceDpan().expr
+    return SourceDpantr().expr
 
 @njit
 def calc_in_point_with_sympy(i, j, k, ip, jp, kp, 
@@ -104,7 +100,7 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
                              dxvx, dyvx, dzvx,
                              dxvy, dyvy, dzvy,
                              dxvz, dyvz, dzvz,  
-                             f=njit(SourceDpan().fct)):
+                             f=njit(SourceDpantr().fct)):
     IpperpP, IpparP, IpmP = Ipperp[ip, jp, kp], Ippar[ip, jp, kp], Ipm[ip, jp, kp]
     IpperpNP, IpparNP, IpmNP = Ipperp[i, j, k], Ippar[i, j, k], Ipm[i, j, k]
     IbxP, IbyP, IbzP = Ibx[ip, jp, kp], Iby[ip, jp, kp], Ibz[ip, jp, kp]
@@ -125,15 +121,16 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
                              
 def calc_with_fourier(Ipperp, Ippar, Ipm, Ibx, Iby, Ibz, dxvx, dyvx, dzvx, dxvy, dyvy, dzvy, dxvz, dyvz, dzvz):
     #dA*dB = 2AB - A'B - AB'
-    output = 2*np.mean((Ippar - Ipperp) / (2*Ipm) * (Ibx * Ibx * dxvx + Iby * Iby * dyvy + Ibz * Ibz * dzvz
-                       +  Ibx * Iby * (dxvy + dyvx) +  Ibx * Ibz * (dxvz + dzvx) +  Iby * Ibz * (dzvy + dyvz)))
+    output = 2*np.mean((Ippar - Ipperp) / (2*Ipm) * (Ibx*Ibx*dxvx + Iby*Iby*dyvy + Ibz*Ibz*dzvz
+                                                     +Ibx*Iby*(dxvy+dyvx) + Ibx*Ibz*(dxvz+dzvx) + Iby*Ibz*(dzvy+dyvz))
+                       + (Ipperp - Ippar)/3 * (dxvx+dyvy+dzvz))
     
-    fpbbxx = ft.fft((Ippar - Ipperp) / (2*Ipm) * Ibx * Ibx)
-    fpbbxy = ft.fft((Ippar - Ipperp) / (2*Ipm) * Ibx * Iby)
-    fpbbxz = ft.fft((Ippar - Ipperp) / (2*Ipm) * Ibx * Ibz)
-    fpbbyy = ft.fft((Ippar - Ipperp) / (2*Ipm) * Iby * Iby)
-    fpbbyz = ft.fft((Ippar - Ipperp) / (2*Ipm) * Iby * Ibz)
-    fpbbzz = ft.fft((Ippar - Ipperp) / (2*Ipm) * Ibz * Ibz)
+    fpbbxx = ft.fft((Ipperp - Ippar)/3 + (Ippar - Ipperp) * Ibx * Ibx / (2*Ipm)) 
+    fpbbxy = ft.fft((Ippar - Ipperp) * Ibx * Iby / (2*Ipm))
+    fpbbxz = ft.fft((Ippar - Ipperp) * Ibx * Ibz / (2*Ipm))
+    fpbbyy = ft.fft((Ipperp - Ippar)/3 + (Ippar - Ipperp) * Iby * Iby / (2*Ipm))
+    fpbbyz = ft.fft((Ippar - Ipperp) * Iby * Ibz / (2*Ipm))
+    fpbbzz = ft.fft((Ipperp - Ippar)/3 + (Ippar - Ipperp) * Ibz * Ibz / (2*Ipm))
     
     fdxx = ft.fft(dxvx)
     fdxy = ft.fft(dxvy + dyvx)

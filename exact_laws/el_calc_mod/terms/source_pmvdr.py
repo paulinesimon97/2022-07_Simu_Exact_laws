@@ -1,7 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
 
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 class SourcePmvdr(AbstractTerm):
@@ -27,6 +29,9 @@ class SourcePmvdr(AbstractTerm):
     def calc(self, vector:List[int], cube_size:List[int],vx, vy, vz, pm, dxrho, dyrho, dzrho, **kwarg) -> List[float]:
         return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, vx, vy, vz, pm, dxrho, dyrho, dzrho)
 
+    def calc_fourier(self, vx, vy, vz, pm, dxrho, dyrho, dzrho, **kwarg) -> List:
+        return calc_with_fourier(vx, vy, vz, pm, dxrho, dyrho, dzrho)
+    
     def variables(self) -> List[str]:
         return ['v', 'pm', 'gradrho']
     
@@ -55,3 +60,15 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
            + f(vxP, vyP, vzP, pmP, dxrhoNP, dyrhoNP, dzrhoNP))
     
     return out
+
+def calc_with_fourier(vx, vy, vz, pm, dxrho, dyrho, dzrho):
+    #A*B*C'+A'*B'*C
+    fpvx = ft.fft(pm*vx)
+    fpvy = ft.fft(pm*vy)
+    fpvz = ft.fft(pm*vz) 
+    fdx = ft.fft(dxrho)
+    fdy = ft.fft(dyrho)
+    fdz = ft.fft(dzrho)
+    return ft.ifft(np.conj(fpvx)*fdx+np.conj(fpvy)*fdy+np.conj(fpvz)*fdz
+                   + fpvx*np.conj(fdx)+ fpvy*np.conj(fdy)+ fpvz*np.conj(fdz))
+    

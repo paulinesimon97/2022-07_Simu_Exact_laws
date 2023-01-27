@@ -41,7 +41,6 @@ class FluxDvdvdv(AbstractTerm):
         self.exprz = (dvx * dvx + dvy * dvy + dvz * dvz) * dvz
     
     def calc(self, vector:List[int], cube_size:List[int], vx, vy, vz, **kwarg) -> List[float]:
-        #return calc_flux_with_numba(calc_in_point, *vector, *cube_size, vx, vy, vz)
         return calc_flux_with_numba(calc_in_point_with_sympy, *vector, *cube_size, vx, vy, vz)
     
     def calc_fourier(self, vx, vy, vz, **kwarg) -> List:

@@ -1,15 +1,18 @@
 from typing import List
-from numba import njit
+import sympy as sp
+from .abstract_term import calc_source_with_numba
+from .source_rduisodv import SourceRduisodv, calc_in_point_with_sympy, calc_with_fourier
 
-from .abstract_term import AbstractTerm, calc_source_with_numba
 
-
-class SourceRdupoldv(AbstractTerm):
+class SourceRdupoldv(SourceRduisodv):
     def __init__(self):
-        pass
+        SourceRduisodv.__init__(self)
 
     def calc(self, vector: List[int], cube_size: List[int], rho, upol, divv, **kwarg) -> List[float]:
-        return calc_source_with_numba(calc_in_point, *vector, *cube_size, rho, upol, divv)
+        return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, upol, divv)
+
+    def calc_fourier(self, rho, upol, divv, **kwarg) -> List:
+        return calc_with_fourier(rho, upol, divv)
 
     def variables(self) -> List[str]:
         return ["rho", "upol", "divv"]
@@ -19,10 +22,6 @@ def load():
     return SourceRdupoldv()
 
 
-@njit
-def calc_in_point(i, j, k, ip, jp, kp, rho, upol, divv):
-
-    return (
-        rho[i, j, k] * (upol[ip, jp, kp] - upol[i, j, k]) * divv[ip, jp, kp]
-        - rho[ip, jp, kp] * (upol[ip, jp, kp] - upol[i, j, k]) * divv[i, j, k]
-    )
+def print_expr():
+    sp.init_printing(use_latex=True)
+    return SourceRdupoldv().expr

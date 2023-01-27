@@ -1,6 +1,9 @@
 from typing import List
 from numba import njit
 import sympy as sp
+import numpy as np
+
+from ...mathematical_tools import fourier_transform as ft
 from .abstract_term import AbstractTerm, calc_source_with_numba
 
 
@@ -50,6 +53,9 @@ class SourcePanvdrdr(AbstractTerm):
     ) -> List[float]:
         return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho, dzrho)
 
+    def calc_fourier(self, rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho, dzrho, **kwarg) -> List:
+        return calc_with_fourier(rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho, dzrho)
+
     def variables(self) -> List[str]:
         return ["rho", "gradrho", "v", "pgyr", "pm", "b"]
 
@@ -78,4 +84,25 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp, rho, vx, vy, vz, pperp, ppar, 
     dxrhoNP, dyrhoNP, dzrhoNP = dxrho[i, j, k], dyrho[i, j, k], dzrho[i, j, k]
 
     return (f(rhoP, rhoNP, pperpNP, pparNP, pmNP, vxNP, vyNP, vzNP, bxNP, byNP, bzNP, dxrhoP, dyrhoP, dzrhoP) 
-            + f(rhoNP, rhoP, pperpP, pparP, pmP, vxP, vyP, vzP, bxP, byP, bzP, dxrhoNP, dyrhoNP, dzrhoNP) )
+            + f(rhoNP, rhoP, pperpP, pparP, pmP, vxP, vyP, vzP, bxP, byP, bzP, dxrhoNP, dyrhoNP, dzrhoNP))
+
+def calc_with_fourier(rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho, dzrho):
+    #dA*B*C'/D' - dA*B'*C/D = A'*B*C'/D' + A*B'*C/D - A*B*C'/D' - A'*B'*C/D
+    fpvx = ft.fft((ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * bx)
+    fpvy = ft.fft((ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * by)
+    fpvz = ft.fft((ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * bz)
+    fdx = ft.fft(dxrho)
+    fdy = ft.fft(dyrho)
+    fdz = ft.fft(dzrho)
+    output = ft.ifft(fpvx*np.conj(fdx) + fpvy*np.conj(fdy) + fpvz*np.conj(fdz)
+                     + np.conj(fpvx)*fdx + np.conj(fpvy)*fdy + np.conj(fpvz)*fdz)
+    del(fpvx,fpvy,fpvz,fdx,fdy,fdz)
+    frpvx = ft.fft(rho * (ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * bx)
+    frpvy = ft.fft(rho * (ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * by)
+    frpvz = ft.fft(rho * (ppar-pperp)/(2*pm) * (vx*bx+vy*by+vz*bz) * bz)
+    fdrx = ft.fft(dxrho / rho)
+    fdry = ft.fft(dyrho / rho)
+    fdrz = ft.fft(dzrho / rho)
+    output -= ft.ifft(frpvx*np.conj(fdrx) + frpvy*np.conj(fdry) + frpvz*np.conj(fdrz)
+                     + np.conj(frpvx)*fdrx + np.conj(frpvy)*fdry + np.conj(frpvz)*fdrz)
+    return output

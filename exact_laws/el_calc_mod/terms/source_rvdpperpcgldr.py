@@ -1,17 +1,20 @@
 from typing import List
-from numba import njit
+import sympy as sp
+from .abstract_term import calc_source_with_numba
+from .source_rvdpisodr import SourceRvdpisodr, calc_in_point_with_sympy, calc_with_fourier
 
-from .abstract_term import AbstractTerm, calc_source_with_numba
 
-
-class SourceRvdpperpcgldr(AbstractTerm):
+class SourceRvdpperpcgldr(SourceRvdpisodr):
     def __init__(self):
-        pass
+        SourceRvdpisodr.__init__(self)
 
     def calc(
         self, vector: List[int], cube_size: List[int], rho, vx, vy, vz, pperpcgl, dxrho, dyrho, dzrho, **kwarg
     ) -> List[float]:
-        return calc_source_with_numba(calc_in_point, *vector, *cube_size, rho, vx, vy, vz, pperpcgl, dxrho, dyrho, dzrho)
+        return calc_source_with_numba(calc_in_point_with_sympy, *vector, *cube_size, rho, vx, vy, vz, pperpcgl, dxrho, dyrho, dzrho)
+
+    def calc_fourier(self, rho, vx, vy, vz, ppperpcgl, dxrho, dyrho, dzrho, **kwarg) -> List:
+        return calc_with_fourier(rho, vx, vy, vz, ppperpcgl, dxrho, dyrho, dzrho)
 
     def variables(self) -> List[str]:
         return ["rho", "gradrho", "v", "pcgl"]
@@ -21,11 +24,6 @@ def load():
     return SourceRvdpperpcgldr()
 
 
-@njit
-def calc_in_point(i, j, k, ip, jp, kp, rho, vx, vy, vz, pperpcgl, dxrho, dyrho, dzrho):
-
-    vNPgradrhoP = vx[i, j, k] * dxrho[ip, jp, kp] + vy[i, j, k] * dyrho[ip, jp, kp] + vz[i, j, k] * dzrho[ip, jp, kp]
-    vPgradrhoNP = vx[ip, jp, kp] * dxrho[i, j, k] + vy[ip, jp, kp] * dyrho[i, j, k] + vz[ip, jp, kp] * dzrho[i, j, k]
-    dpperp = pperpcgl[ip, jp, kp] - pperpcgl[i, j, k]
-
-    return rho[i, j, k] * dpperp * vNPgradrhoP / rho[ip, jp, kp] - rho[ip, jp, kp] * dpperp * vPgradrhoNP / rho[i, j, k]
+def print_expr():
+    sp.init_printing(use_latex=True)
+    return SourceRvdpperpcgldr().expr
