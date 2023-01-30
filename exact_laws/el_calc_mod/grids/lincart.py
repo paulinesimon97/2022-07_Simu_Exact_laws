@@ -7,7 +7,7 @@ def load(original_grid, kind, **kargs):
     grid = {} 
     grid['lx'] = np.arange(0,N[0])-int(N[0]/2)
     grid['ly'] = np.arange(0,N[1])-int(N[1]/2)
-    grid['lz'] = np.arange(0,int(N[2]/2))
+    grid['lz'] = np.arange(0,int(N[2]))
     return IncGrid(original_grid=original_grid, N=N, axis=['lx','ly','lz'], coords=grid, kind=kind, coord='lincart')
     
 def load_outputgrid(incgrid, *args):
@@ -32,7 +32,7 @@ def div(incgrid, dataset_terms):
 def reorganise_quantities(output_quantities, incgrid, *args):
     output = {}
     
-    N = incgrid.spatial_grid.N
+    N = incgrid.N
 
     list_flux = [k for k in output_quantities if k.startswith("flux")]
     for t in list_flux:
