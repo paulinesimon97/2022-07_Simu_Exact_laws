@@ -143,4 +143,4 @@ def calc_with_fourier(Ijx, Ijy, Ijz, Ibx, Iby, Ibz):
                         - (np.conj(fbx)*fIjxbz+np.conj(fby)*fIjybz+np.conj(fbz)*fIjzbz)
                         + (fIjx*np.conj(fbxbz)+fIjy*np.conj(fbybz)+fIjz*np.conj(fbzbz))
                         - (np.conj(fIjx)*fbxbz+np.conj(fIjy)*fbybz+np.conj(fIjz)*fbzbz))
-    return [flux_x,flux_y,flux_z]
+    return [flux_x/np.size(flux_x),flux_y/np.size(flux_y),flux_z/np.size(flux_z)] 

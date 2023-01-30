@@ -62,7 +62,7 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp, rho, bx, by, bz, divv,f=njit(S
     return (f(rhoP, rhoNP, bxP, byP, bzP, bxNP, byNP, bzNP, divvP, divvNP) )
 
 def calc_with_fourier(rho, bx, by, bz, divv): 
-    #dA*B*C'*dD = BC'A'D' + BC'AD - BC'A'D - BC'AD'
+    #(A+A')*B*C'*(D+D') = BC'A'D' + BC'AD + BC'A'D + BC'AD'
     fbx = ft.fft(bx)
     fby = ft.fft(by)
     fbz = ft.fft(bz)
@@ -82,8 +82,8 @@ def calc_with_fourier(rho, bx, by, bz, divv):
     fbdy = ft.fft(by*divv)
     fbdz = ft.fft(bz*divv)
     
-    output -= ft.ifft(fbdx*np.conj(frbx)+fbdy*np.conj(frby)+fbdz*np.conj(frbz)
+    output += ft.ifft(fbdx*np.conj(frbx)+fbdy*np.conj(frby)+fbdz*np.conj(frbz)
                      +np.conj(fbdx)*frbx+np.conj(fbdy)*frby+np.conj(fbdz)*frbz)
-    return output
+    return output/np.size(output)
 
 

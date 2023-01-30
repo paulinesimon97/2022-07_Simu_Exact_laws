@@ -75,5 +75,7 @@ def calc_with_fourier(rho, bx, by, bz) -> List:
     frhoby = ft.fft(rho*by)
     frhobz = ft.fft(rho*bz)
     
-    return ft.ifft(frhobx*np.conj(fbx) + frhoby*np.conj(fby) + frhobz*np.conj(fbz)
+    output = ft.ifft(frhobx*np.conj(fbx) + frhoby*np.conj(fby) + frhobz*np.conj(fbz)
                     + np.conj(frhobx)*fbx + np.conj(frhoby)*fby + np.conj(frhobz)*fbz)/4
+    
+    return output/np.size(output)

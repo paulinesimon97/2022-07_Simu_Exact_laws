@@ -58,6 +58,7 @@ def calc_with_fourier(rho, uiso, divv):
     fd = ft.fft(divv)
     fr = ft.fft(rho)
     fud = ft.fft(uiso*divv)
-    return ft.ifft(np.conj(fr)*fud + fr*np.conj(fud) - np.conj(fru)*fd - fru*np.conj(fd))
+    output = ft.ifft(np.conj(fr)*fud + fr*np.conj(fud) - np.conj(fru)*fd - fru*np.conj(fd))
+    return output/np.size(output)
 
 

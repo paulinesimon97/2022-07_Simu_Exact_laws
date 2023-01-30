@@ -116,8 +116,9 @@ def calc_with_fourier(rho, pperp, ppar, pm, bx, by, bz,
     fdyy = ft.fft(dyvy)
     fdzz = ft.fft(dzvz)
     fdyz = ft.fft(dzvy+dyvz)
-    return ft.ifft(fr*np.conj(fpd) + np.conj(fr)*fpd
+    output = ft.ifft(fr*np.conj(fpd) + np.conj(fr)*fpd
                    - (frpxx*np.conj(fdxx) + frpyy*np.conj(fdyy) + frpzz*np.conj(fdzz)
                       + frpxy*np.conj(fdxy) + frpxz*np.conj(fdxz) + frpyz*np.conj(fdyz))
                    - (fdxx*np.conj(frpxx) + fdyy*np.conj(frpyy) + fdzz*np.conj(frpzz)
                        + fdxy*np.conj(frpxy) + fdxz*np.conj(frpxz) + fdyz*np.conj(frpyz)))
+    return output/np.size(output)

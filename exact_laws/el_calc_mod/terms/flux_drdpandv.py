@@ -169,6 +169,6 @@ def calc_with_fourier(rho, pperp, ppar, vx, vy, vz, pm, bx, by, bz):
                      - (frvx*np.conj(fpxz) + frvy*np.conj(fpyz) + frvz*np.conj(fpzz))
                      + (np.conj(frvx)*fpxz + np.conj(frvy)*fpyz + np.conj(frvz)*fpzz))
     
-    return [flux_x,flux_y,flux_z]
+    return [flux_x/np.size(flux_x),flux_y/np.size(flux_y),flux_z/np.size(flux_z)] 
     
         

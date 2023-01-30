@@ -115,13 +115,14 @@ def calc_in_point_with_sympy(i, j, k, ip, jp, kp,
     return (f(IpperpP, IpparP, IpmP, IbxP, IbyP, IbzP,
             dxvxP, dyvxP, dzvxP, dxvyP, dyvyP, dzvyP, dxvzP, dyvzP, dzvzP,
             dxvxNP, dyvxNP, dzvxNP, dxvyNP, dyvyNP, dzvyNP, dxvzNP, dyvzNP, dzvzNP)
-           - f(IpperpNP, IpparNP, IpmNP, IbxNP, IbyNP, IbzNP,
-            dxvxP, dyvxP, dzvxP, dxvyP, dyvyP, dzvyP, dxvzP, dyvzP, dzvzP,
-            dxvxNP, dyvxNP, dzvxNP, dxvyNP, dyvyNP, dzvyNP, dxvzNP, dyvzNP, dzvzNP))
+           + f(IpperpNP, IpparNP, IpmNP, IbxNP, IbyNP, IbzNP,
+               dxvxNP, dyvxNP, dzvxNP, dxvyNP, dyvyNP, dzvyNP, dxvzNP, dyvzNP, dzvzNP,
+            dxvxP, dyvxP, dzvxP, dxvyP, dyvyP, dzvyP, dxvzP, dyvzP, dzvzP
+            ))
                              
 def calc_with_fourier(Ipperp, Ippar, Ipm, Ibx, Iby, Ibz, dxvx, dyvx, dzvx, dxvy, dyvy, dzvy, dxvz, dyvz, dzvz):
     #dA*dB = 2AB - A'B - AB'
-    output = 2*np.mean((Ippar - Ipperp) / (2*Ipm) * (Ibx*Ibx*dxvx + Iby*Iby*dyvy + Ibz*Ibz*dzvz
+    output = 2*np.sum((Ippar - Ipperp) / (2*Ipm) * (Ibx*Ibx*dxvx + Iby*Iby*dyvy + Ibz*Ibz*dzvz
                                                      +Ibx*Iby*(dxvy+dyvx) + Ibx*Ibz*(dxvz+dzvx) + Iby*Ibz*(dzvy+dyvz))
                        + (Ipperp - Ippar)/3 * (dxvx+dyvy+dzvz))
     
@@ -144,5 +145,5 @@ def calc_with_fourier(Ipperp, Ippar, Ipm, Ibx, Iby, Ibz, dxvx, dyvx, dzvx, dxvy,
                       + np.conj(fpbbxx)*fdxx + np.conj(fpbbxy)*fdxy + np.conj(fpbbxz)*fdxz
                       + np.conj(fpbbyy)*fdyy + np.conj(fpbbyz)*fdyz + np.conj(fpbbzz)*fdzz) 
     
-    return output
+    return output/np.size(output)
     

@@ -75,7 +75,9 @@ def calc_with_fourier(rho, bx, by, bz, divv):
     fd = ft.fft(divv)
     frbb = ft.fft(rho*bx*bx+rho*by*by+rho*bz*bz)
     
-    return ft.ifft(frbdx*np.conj(fbx)+frbdy*np.conj(fby)+frbdz*np.conj(fbz)
+    output = ft.ifft(frbdx*np.conj(fbx)+frbdy*np.conj(fby)+frbdz*np.conj(fbz)
                      +np.conj(frbdx)*fbx+np.conj(frbdy)*fby+np.conj(frbdz)*fbz
                      -frbb*np.conj(fd)-np.conj(frbb)*fd)
+    
+    return output/np.size(output)
 

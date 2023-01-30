@@ -112,9 +112,9 @@ def calc_with_fourier(rho, vx, vy, vz, bx, by, bz):
     frvyby = ft.fft(rho*vy*by)
     frvzbz = ft.fft(rho*vz*bz)
     
-    fbxbx = ft.fft(rho*bx*bx)
-    fbybx = ft.fft(rho*by*bx)
-    fbzbx = ft.fft(rho*bz*bx)
+    fbxbx = ft.fft(bx*bx)
+    fbybx = ft.fft(by*bx)
+    fbzbx = ft.fft(bz*bx)
     frvybx = ft.fft(rho*vy*bx)
     frvzbx = ft.fft(rho*vz*bx)
     flux_x = ft.ifft(fbx*np.conj(frvxbx+frvyby+frvzbz) - np.conj(fbx)*(frvxbx+frvyby+frvzbz) 
@@ -124,8 +124,8 @@ def calc_with_fourier(rho, vx, vy, vz, bx, by, bz):
                         - (np.conj(fbx)*frvxbx+np.conj(fby)*frvybx+np.conj(fbz)*frvzbx))
     del(frvybx,frvzbx,fbxbx)
     
-    fbyby = ft.fft(rho*by*by)
-    fbzby = ft.fft(rho*bz*by)
+    fbyby = ft.fft(by*by)
+    fbzby = ft.fft(bz*by)
     frvxby = ft.fft(rho*vx*by)
     frvzby = ft.fft(rho*vz*by)
     flux_y = ft.ifft(fby*np.conj(frvxbx+frvyby+frvzbz) - np.conj(fby)*(frvxbx+frvyby+frvzbz) 
@@ -135,13 +135,13 @@ def calc_with_fourier(rho, vx, vy, vz, bx, by, bz):
                         - (np.conj(fbx)*frvxby+np.conj(fby)*frvyby+np.conj(fbz)*frvzby))
     del(frvxby,frvzby,fbyby,fbybx)
     
-    fbzbz = ft.fft(rho*bz*by)
-    frvxbz = ft.fft(rho*vx*by)
-    frvybz = ft.fft(rho*vz*by)
+    fbzbz = ft.fft(bz*bz)
+    frvxbz = ft.fft(rho*vx*bz)
+    frvybz = ft.fft(rho*vy*bz)
     flux_z = ft.ifft(fbz*np.conj(frvxbx+frvyby+frvzbz) - np.conj(fbz)*(frvxbx+frvyby+frvzbz) 
                         + (frvx*np.conj(fbzbx)+frvy*np.conj(fbzby)+frvz*np.conj(fbzbz))
                         - (np.conj(frvx)*fbzbx+np.conj(frvy)*fbzby+np.conj(frvz)*fbzbz)
                         + (fbx*np.conj(frvxbz)+fby*np.conj(frvybz)+fbz*np.conj(frvzbz))
                         - (np.conj(fbx)*frvxbz+np.conj(fby)*frvybz+np.conj(fbz)*frvzbz))
     
-    return [flux_x,flux_y,flux_z]
+    return [flux_x/np.size(flux_x),flux_y/np.size(flux_y),flux_z/np.size(flux_z)] 

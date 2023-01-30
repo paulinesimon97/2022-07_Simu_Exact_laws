@@ -33,8 +33,8 @@ class SourceRvdpandr(AbstractTerm):
         bxNP, byNP, bzNP = sp.symbols(("bx", "by", "bz"))
         dxrhoP, dyrhoP, dzrhoP = sp.symbols(("dxrho'", "dyrho'", "dzrho'"))
         
-        pressNP = (pparNP - pperpNP) / pmNP
-        pressP = (pparP - pperpP) / pmP
+        pressNP = (pparNP - pperpNP) / (2*pmNP)
+        pressP = (pparP - pperpP) / (2*pmP)
 
         dpxx = pressP * bxP * bxP - pressNP * bxNP * bxNP
         dpxy = pressP * bxP * byP - pressNP * bxNP * byNP
@@ -115,4 +115,4 @@ def calc_with_fourier(rho, vx, vy, vz, pperp, ppar, pm, bx, by, bz, dxrho, dyrho
     fdrz = ft.fft(dzrho / rho)
     output -= ft.ifft(frpvx*np.conj(fdrx) + frpvy*np.conj(fdry) + frpvz*np.conj(fdrz)
                      + np.conj(frpvx)*fdrx + np.conj(frpvy)*fdry + np.conj(frpvz)*fdrz)
-    return output
+    return output/np.size(output)

@@ -57,6 +57,7 @@ def calc_with_fourier(rho, piso, divv):
     fd = ft.fft(divv)
     fr = ft.fft(rho)
     fpd = ft.fft(piso*divv)
-    return ft.ifft(np.conj(fr)*fpd + fr*np.conj(fpd) - np.conj(frp)*fd - frp*np.conj(fd))
+    output = ft.ifft(np.conj(fr)*fpd + fr*np.conj(fpd) - np.conj(frp)*fd - frp*np.conj(fd))
+    return output/np.size(output)
 
 

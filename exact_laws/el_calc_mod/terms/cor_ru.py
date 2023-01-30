@@ -67,4 +67,5 @@ def calc_with_fourier(rho, ugyr):
     frho = ft.fft(rho)
     fu = ft.fft(ugyr)
     
-    return ft.ifft(frho*np.conj(fu)+np.conj(frho)*fu)/2
+    output = ft.ifft(frho*np.conj(fu)+np.conj(frho)*fu)/2
+    return output/np.size(output)

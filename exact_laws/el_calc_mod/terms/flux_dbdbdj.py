@@ -126,5 +126,5 @@ def calc_with_fourier(Ijx, Ijy, Ijz, Ibx, Iby, Ibz):
     flux_z = ft.ifft(fjz*np.conj(fbxbx+fbyby+fbzbz) - np.conj(fjz)*(fbxbx+fbyby+fbzbz) 
                         + 2*(fbx*np.conj(fbxjz)+fby*np.conj(fbyjz)+fbz*np.conj(fjzbz))
                         - 2*(np.conj(fbx)*fbxjz+np.conj(fby)*fbyjz+np.conj(fbz)*fjzbz))
-    return [flux_x,flux_y,flux_z]
+    return [flux_x/np.size(flux_x),flux_y/np.size(flux_y),flux_z/np.size(flux_z)] 
     

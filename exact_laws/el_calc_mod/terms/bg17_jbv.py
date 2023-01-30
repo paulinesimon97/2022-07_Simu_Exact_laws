@@ -99,7 +99,11 @@ def calc_with_fourier(vx, vy, vz, Ibx, Iby, Ibz, Ijx, Ijy, Ijz):
     fjXby = ft.fft(jXby)
     fjXbz = ft.fft(jXbz)
     
-    fourier_part = - ft.ifft(fjXbx*np.conj(fvx) + np.conj(fjXbx)*fvx + fjXby*np.conj(fvy) + np.conj(fjXby)*fvy + fjXbz*np.conj(fvz) + np.conj(fjXbz)*fvz)
-    mean_part = 2*np.mean(jXbx*vx+jXby*vy+jXbz*vz)
+    output = 2*np.sum(jXbx*vx+jXby*vy+jXbz*vz)
     
-    return mean_part + fourier_part
+    output -= ft.ifft(fjXbx*np.conj(fvx) + np.conj(fjXbx)*fvx 
+                             + fjXby*np.conj(fvy) + np.conj(fjXby)*fvy 
+                             + fjXbz*np.conj(fvz) + np.conj(fjXbz)*fvz)
+    
+    
+    return output/np.size(output)

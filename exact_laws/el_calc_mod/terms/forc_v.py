@@ -85,7 +85,9 @@ def calc_with_fourier(rho, vx, vy, vz, fx, fy, fz):
     frhofy = ft.fft(rho*fy)
     frhofz = ft.fft(rho*fz)
     
-    return ft.ifft(frhofx*np.conj(fvx) + frhofy*np.conj(fvy) + frhofz*np.conj(fvz)
+    output = ft.ifft(frhofx*np.conj(fvx) + frhofy*np.conj(fvy) + frhofz*np.conj(fvz)
                    + frhovx*np.conj(ffx) + frhovy*np.conj(ffy) + frhovz*np.conj(ffz)
                    + np.conj(frhofx)*fvx + np.conj(frhofy)*fvy + np.conj(frhofz)*fvz
                    + np.conj(frhovx)*ffx + np.conj(frhovy)*ffy + np.conj(frhovz)*ffz)
+    return output/np.size(output)
+    

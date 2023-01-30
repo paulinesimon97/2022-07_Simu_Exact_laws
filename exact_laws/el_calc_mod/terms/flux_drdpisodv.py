@@ -119,4 +119,4 @@ def calc_with_fourier(rho, piso, vx, vy, vz):
                      + np.conj(fpvz)*fr - fpvz*np.conj(fr)
                      + np.conj(frvz)*fp - frvz*np.conj(fp))
 
-    return [flux_x,flux_y,flux_z]
+    return [flux_x/np.size(flux_x),flux_y/np.size(flux_y),flux_z/np.size(flux_z)] 

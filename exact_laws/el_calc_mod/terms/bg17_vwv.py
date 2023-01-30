@@ -85,8 +85,8 @@ def calc_with_fourier(vx, vy, vz, wx, wy, wz):
     fvXwx = ft.fft(vXwx)
     fvXwy = ft.fft(vXwy)
     fvXwz = ft.fft(vXwz)
+    output = 2*np.sum(vXwx*vx+vXwy*vy+vXwz*vz)
+    output -= ft.ifft(fvXwx*np.conj(fvx) + np.conj(fvXwx)*fvx + fvXwy*np.conj(fvy) + np.conj(fvXwy)*fvy + fvXwz*np.conj(fvz) + np.conj(fvXwz)*fvz)
     
-    fourier_part = - ft.ifft(fvXwx*np.conj(fvx) + np.conj(fvXwx)*fvx + fvXwy*np.conj(fvy) + np.conj(fvXwy)*fvy + fvXwz*np.conj(fvz) + np.conj(fvXwz)*fvz)
-    mean_part = 2*np.mean(vXwx*vx+vXwy*vy+vXwz*vz)
     
-    return mean_part + fourier_part
+    return output/np.size(output)

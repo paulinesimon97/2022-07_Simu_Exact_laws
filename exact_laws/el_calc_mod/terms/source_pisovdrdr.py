@@ -93,5 +93,5 @@ def calc_with_fourier(rho, vx, vy, vz, piso, dxrho, dyrho, dzrho):
     
     output -= ft.ifft(fdrx*np.conj(frpvx)+fdry*np.conj(frpvy)+fdrz*np.conj(frpvz)
                      +np.conj(fdrx)*frpvx+np.conj(fdry)*frpvy+np.conj(fdrz)*frpvz)
-    return output
+    return output/np.size(output)
     
