@@ -146,6 +146,8 @@ def from_OCA_files_to_standard_h5_file(
         g = h5.File(output_file, "a")
         with h5.File(f"{input_folder}/3Dfields_pi.h5", "r") as fp:
             dic_quant["ppar"], dic_quant["pperp"] = extract_quantities_from_OCA_file(fp, ["pparli", "pperpi"], cycle)
+        dic_quant["ppar"] /= 2 #Correction de l'adimensionnement
+        dic_quant["pperp"] /= 2 #Correction de l'adimensionnement
         accessible_quantities = ["Ipgyr", "pgyr", "ugyr", "piso", "uiso", "graduiso", "ppol", "upol", "gradupol"]
         for aq in accessible_quantities:
             if aq in needed_quantities:
