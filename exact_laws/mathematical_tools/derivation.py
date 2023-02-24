@@ -158,13 +158,39 @@ def grad(tab, case_vec=[None], precision=4, period=True):
     return list(grad_gen(tab, case_vec, precision, period))
 
 
-def laplacien(tab, alpha=[None], case_vec=[None], precision=4, period=True):
+def laplacien2(tab, alpha=[None], case_vec=[None], precision=4, period=True):
     if case_vec[0] is None:
         case_vec = np.ones(len(np.shape(tab)), dtype=int)
     if alpha[0] is None:
         alpha = np.ones(len(np.shape(tab)), dtype=int)
     return np.sum(
         [alpha[i]*cdiff(cdiff(tab, case_vec[i], i, precision, period), case_vec[i], i, precision, period)
+         for i in range(len(case_vec))],
+        axis=0,
+    )
+
+def cdiff2_prec4(tab, length_case=1, dirr=0, period=True):
+    if len(np.shape(tab)) == 1:
+        dirr = 0
+    if length_case == 0:
+        return np.zeros(np.shape(tab))
+    tab = np.array(tab)
+    result = ( -30 * tab
+        - np.roll(tab, 2, axis=int(dirr))
+        + 16 * np.roll(tab, -1, axis=int(dirr))
+        + 16 * np.roll(tab, 1, axis=int(dirr))
+        - np.roll(tab, -2, axis=int(dirr))
+    ) / (12 * length_case * length_case)
+
+    return result
+
+def laplacien(tab, alpha=[None], case_vec=[None]):
+    if case_vec[0] is None:
+        case_vec = np.ones(len(np.shape(tab)), dtype=int)
+    if alpha[0] is None:
+        alpha = np.ones(len(np.shape(tab)), dtype=int)
+    return np.sum(
+        [alpha[i]*cdiff2_prec4(tab, case_vec[i], i)
          for i in range(len(case_vec))],
         axis=0,
     )

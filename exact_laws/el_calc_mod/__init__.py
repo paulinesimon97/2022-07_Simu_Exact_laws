@@ -41,6 +41,7 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
         
         [METHOD_PARAMS]
         method = fourier ou incremental
+        multifile = False
     '''
 
     config = configparser.ConfigParser()
@@ -49,8 +50,12 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     # translate information useful for the computation
     input_filename = f"{config['INPUT_DATA']['path']}/{config['INPUT_DATA']['name']}.h5"
     output_filename = f"{config['OUTPUT_DATA']['path']}/{config['INPUT_DATA']['name']}_{config['OUTPUT_DATA']['name']}.h5"
-    
+    output_filename_beg = f"{config['OUTPUT_DATA']['path']}/{config['INPUT_DATA']['name']}"
+    output_filename_end = f"_{config['OUTPUT_DATA']['name']}.h5"
     method = config['METHOD_PARAMS']['method']
+    if config['METHOD_PARAMS']['multifile']:
+        multifile = eval(config['METHOD_PARAMS']['multifile'])
+    else : multifile = False
     mod = importlib.import_module(f"exact_laws.el_calc_mod.{method}", "*")
     
     message = (
@@ -88,8 +93,70 @@ def calc_exact_laws_from_config(config_file, run_config, backup):
     incremental_grid.check('incremental_grid')
 
     # ## CALCUL LOI EXACTE
-    mod.apply_method(original_dataset, incremental_grid, input_grid["coord"], laws, terms, output_filename, run_config, backup)
+    if multifile:
+        distrib = multifile_distrib(laws,terms)
+        filenames = []
+        for k in distrib:
+            logging.info(f'INIT apply method for {k}')
+            filename = output_filename_beg+k+output_filename_end
+            tag = mod.apply_method(original_dataset, incremental_grid, input_grid["coord"], 
+                             distrib[k]['laws'], distrib[k]['terms'], filename, 
+                             run_config, backup)
+            if tag :  filenames.append(filename)
+            logging.info(f'END apply method for {k}')
+        logging.info("INIT reduction 3D to 2D ")
+        if run_config.rank == 0:
+            mod.red3Dto2D_multifile(output_filename,filenames,incremental_grid)
+        logging.info("END reduction 3D to 2D")
+    else :
+        mod.apply_method(original_dataset, incremental_grid, input_grid["coord"], 
+                         laws, terms, output_filename, run_config, backup)
+        logging.info("INIT reduction 3D to 2D ")
+        if run_config.rank == 0:
+            mod.red3Dto2D(output_filename,incremental_grid)
+        logging.info("END reduction 3D to 2D")
     
     if run_config.rank == 0:
-        process_on_standard_h5_file.check_file(output_filename)
+        if not multifile:
+            process_on_standard_h5_file.check_file(output_filename)
+        
+def multifile_distrib(laws,terms):
+    set_laws = set(laws)
+    set_terms = set(terms)
+    out = {}
     
+    out['_inc'] = {}
+    inc_laws = {'PP98','BG17','ISS22Cgl','ISS22Gyr','ISS22Iso'}
+    out['_inc']['laws'] = list(set_laws.intersection(inc_laws))
+    set_laws = set_laws - inc_laws
+    inc_terms = {'source_dpantr','forc_vinc'} 
+    out['_inc']['terms'] = list(set_terms.intersection(inc_terms))
+    set_terms = set_terms - inc_terms
+    
+    comp_laws = set_laws.intersection({'SS22Gyr','SS22Iso','SS22Cgl','SS22Pol'})
+    
+    out['_ss22f'] = {}
+    ss22f_laws = {'SS22Gyr_flux','SS22Iso_flux','SS22Cgl_flux','SS22Pol_flux'}
+    out['_ss22f']['laws'] = list(set(list(set_laws.intersection(ss22f_laws)) + [f'{s}_flux' for s in comp_laws]))
+    set_laws = set_laws - ss22f_laws
+    out['_ss22f']['terms'] = []
+    
+    out['_ss22s'] = {}
+    ss22s_laws = {'SS22Gyr_sources','SS22Iso_sources','SS22Cgl_sources','SS22Pol_sources'}
+    out['_ss22s']['laws'] = list(set(list(set_laws.intersection(ss22s_laws)) + [f'{s}_sources' for s in comp_laws]))
+    set_laws = set_laws - ss22s_laws
+    out['_ss22s']['terms'] = []
+    
+    set_laws = set_laws - comp_laws
+    
+    out['_hall'] = {}
+    hall_laws = {'IHallcor','Hallcor'}
+    out['_hall']['laws'] = list(set_laws.intersection(hall_laws))
+    set_laws = set_laws - hall_laws
+    out['_hall']['terms'] = []
+    
+    out['_other'] = {}
+    out['_other']['laws'] = list(set_laws)
+    out['_other']['terms'] = list(set_terms)
+    
+    return out

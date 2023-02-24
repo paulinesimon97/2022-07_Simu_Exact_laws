@@ -35,8 +35,13 @@ def record_incdataset_to_h5file(filename, dataset):
             elif key == 'coeffs': 
                 f["params"].create_group("coeffs")
                 for k in dataset.params['coeffs']:
+                    ksuffix = k
+                    if k.endswith('flux'): 
+                        ksuffix = k[:-5]
+                    if k.endswith('sources'): 
+                        ksuffix = k[:-8]
                     for t in dataset.params['coeffs'][k]:
-                        f["params"]['coeffs'].create_dataset(k+'_'+t, data=dataset.params['coeffs'][k][t])
+                        f["params"]['coeffs'].create_dataset(ksuffix+'_'+t, data=dataset.params['coeffs'][k][t])
             elif key == 'state': 
                 f["params"].create_group("state")
                 for k in dataset.params['state']:

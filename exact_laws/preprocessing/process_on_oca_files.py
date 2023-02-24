@@ -95,7 +95,7 @@ def from_OCA_files_to_standard_h5_file(
     dic_quant = {}
     # param source file (obtained in velocity source file)
     with h5.File(f"{input_folder}/3Dfields_v.h5", "r") as fv:
-        if "CGL3" in sim_type or  "CGL5" in sim_type:
+        if  sim_type.endswith("CGL3") or  sim_type.endswith("CGL5"):
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "3Dgrid")
         else:
             dic_param = extract_simu_param_from_OCA_file(fv, dic_param, "Simulation_Parameters")
@@ -110,7 +110,7 @@ def from_OCA_files_to_standard_h5_file(
                 dic_quant["vy"],
                 dic_quant["vz"],
             ) = extract_quantities_from_OCA_file(fv, ["vx", "vy", "vz"], cycle)
-        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2","vnorm","hdk"]
+        accessible_quantities = ["v", "w", "gradv", "divv", "gradv2", "v2","vnorm","hdk","hdk2"]
         for aq in accessible_quantities:
             if aq in needed_quantities:
                 logging.info(f"... computing {aq} from _v.h5")
@@ -285,6 +285,7 @@ def from_OCA_files_to_standard_h5_file(
             with h5.File(f"{output_folder}/{name}_{s}.h5temp",'r') as f:
                 for k in f.keys():
                     g.create_dataset(k,data=np.ascontiguousarray(f[k]))
+            os.remove(f"{output_folder}/{name}_{s}.h5temp")
                 
     # Param
     g.create_group("param")
